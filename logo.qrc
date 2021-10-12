@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="logo">
+    <file>cybervault.png</file>
+  </qresource>
+</RCC>
