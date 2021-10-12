@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
-from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog
+from functions import generate_keys
+from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog
 
 
 # Done
@@ -50,6 +51,15 @@ class NewUser(QDialog):
         else:
             print("No MFA\n")
             print(f"Username: {username}")
+        private, public = generate_keys()
+        self.save_key(private)
+
+    def save_key(self, pri_key):
+        filename = QFileDialog.getSaveFileName(self, "Save Private Key", "", 'Key Files (*.pem)')
+        if filename == ('', ''):
+            pass
+        else:
+            print(filename[0])
 
 
 class Login(QDialog):
