@@ -32,9 +32,15 @@
    <string>CyberVault: Password Manager</string>
   </property>
   <property name="windowIcon">
-   <iconset>
-    <normaloff>icon.ico</normaloff>
-    <normalon>icon.ico</normalon>icon.ico</iconset>
+   <iconset resource="logo.qrc">
+    <normaloff>:/logo/icon.ico</normaloff>
+    <normalon>:/logo/icon.ico</normalon>
+    <disabledoff>:/logo/icon.ico</disabledoff>
+    <disabledon>:/logo/icon.ico</disabledon>
+    <activeoff>:/logo/icon.ico</activeoff>
+    <activeon>:/logo/icon.ico</activeon>
+    <selectedoff>:/logo/icon.ico</selectedoff>
+    <selectedon>:/logo/icon.ico</selectedon>:/logo/icon.ico</iconset>
   </property>
   <property name="layoutDirection">
    <enum>Qt::LeftToRight</enum>
@@ -43,7 +49,7 @@
    <string notr="true">background-color: rgb(141, 145, 141);</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="Title">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -79,13 +85,13 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
+   <widget class="QLabel" name="info">
     <property name="geometry">
      <rect>
       <x>20</x>
       <y>90</y>
       <width>920</width>
-      <height>70</height>
+      <height>115</height>
      </rect>
     </property>
     <property name="font">
@@ -110,10 +116,18 @@
     <property name="geometry">
      <rect>
       <x>40</x>
-      <y>200</y>
+      <y>220</y>
       <width>395</width>
       <height>45</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>12</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color: rgb(231, 208, 162);</string>
@@ -126,10 +140,24 @@
     <property name="geometry">
      <rect>
       <x>480</x>
-      <y>200</y>
+      <y>220</y>
       <width>395</width>
       <height>45</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>12</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color: rgb(231, 208, 162);</string>
@@ -142,10 +170,18 @@
     <property name="geometry">
      <rect>
       <x>40</x>
-      <y>265</y>
+      <y>285</y>
       <width>835</width>
       <height>45</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Arial</family>
+      <pointsize>12</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
     </property>
     <property name="styleSheet">
      <string notr="true">background-color: rgb(231, 208, 162);</string>
@@ -154,8 +190,8 @@
      <string>Login</string>
     </property>
    </widget>
-   <zorder>label</zorder>
-   <zorder>label_2</zorder>
+   <zorder>Title</zorder>
+   <zorder>info</zorder>
    <zorder>login_to_account</zorder>
    <zorder>open_cybervault</zorder>
    <zorder>new_account</zorder>
@@ -166,7 +202,7 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -180,7 +216,6 @@
  </widget>
  <resources>
   <include location="logo.qrc"/>
-  <include location="large_logo.qrc"/>
  </resources>
  <connections/>
 </ui>
