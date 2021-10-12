@@ -6,13 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-<<<<<<< HEAD
-    <width>1120</width>
-    <height>841</height>
-=======
     <width>960</width>
     <height>540</height>
->>>>>>> 277fad4031cd3e4a405965960048bd1adb6deada
    </rect>
   </property>
   <property name="sizePolicy">
@@ -44,27 +39,10 @@
   <property name="layoutDirection">
    <enum>Qt::LeftToRight</enum>
   </property>
-<<<<<<< HEAD
-  <property name="autoFillBackground">
-   <bool>false</bool>
-  </property>
-=======
->>>>>>> 277fad4031cd3e4a405965960048bd1adb6deada
   <property name="styleSheet">
    <string notr="true">background-color: rgb(141, 145, 141);</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-<<<<<<< HEAD
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>70</y>
-      <width>1101</width>
-      <height>241</height>
-     </rect>
-    </property>
-=======
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
@@ -80,30 +58,10 @@
       <height>1080</height>
      </size>
     </property>
->>>>>>> 277fad4031cd3e4a405965960048bd1adb6deada
     <property name="font">
      <font>
       <family>Arial</family>
       <pointsize>14</pointsize>
-<<<<<<< HEAD
-     </font>
-    </property>
-    <property name="text">
-     <string> 
-Your one stop shop for RSA based password management. This system will allow you to generate an RSA key pair to keep all your password information safe.The CyberVault can also be used with an Authenticator App to secure your vault with MFA.</string>
-    </property>
-    <property name="wordWrap">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>12</x>
-      <y>12</y>
-      <width>1091</width>
-      <height>51</height>
-=======
       <weight>75</weight>
       <bold>true</bold>
      </font>
@@ -128,7 +86,6 @@ Your one stop shop for RSA based password management. This system will allow you
       <y>90</y>
       <width>920</width>
       <height>70</height>
->>>>>>> 277fad4031cd3e4a405965960048bd1adb6deada
      </rect>
     </property>
     <property name="font">
@@ -139,26 +96,16 @@ Your one stop shop for RSA based password management. This system will allow you
       <bold>true</bold>
      </font>
     </property>
-<<<<<<< HEAD
-    <property name="text">
-     <string>Welcome to the CyberVault: Password Manager.</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-=======
     <property name="frameShape">
      <enum>QFrame::Box</enum>
     </property>
     <property name="text">
      <string>Your one stop shop for RSA based password management. This system will allow you to generate an RSA key pair to keep all your password information safe. The CyberVault can also be used with an Authenticator App to secure your vault with MFA.</string>
->>>>>>> 277fad4031cd3e4a405965960048bd1adb6deada
     </property>
     <property name="wordWrap">
      <bool>true</bool>
     </property>
    </widget>
-<<<<<<< HEAD
-=======
    <widget class="QPushButton" name="new_account">
     <property name="geometry">
      <rect>
@@ -212,20 +159,14 @@ Your one stop shop for RSA based password management. This system will allow you
    <zorder>login_to_account</zorder>
    <zorder>open_cybervault</zorder>
    <zorder>new_account</zorder>
->>>>>>> 277fad4031cd3e4a405965960048bd1adb6deada
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-<<<<<<< HEAD
-     <width>1120</width>
-     <height>26</height>
-=======
      <width>960</width>
      <height>21</height>
->>>>>>> 277fad4031cd3e4a405965960048bd1adb6deada
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
