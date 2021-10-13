@@ -13,8 +13,8 @@ from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
 
-def clipboard_wipe(sleep_time=5):
-    while True:
+def clipboard_wipe(enabled=False, sleep_time=5):
+    while enabled:
         pyperclip.copy("")
         time.sleep(sleep_time)
 

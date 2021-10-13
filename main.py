@@ -1,6 +1,7 @@
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
 from functions import generate_keys
+from database import create_cybervault
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog
 
 
@@ -39,23 +40,30 @@ class NewUser(QDialog):
         self.enableMFA.stateChanged.connect(self.enable_mfa)
         self.create_account_button.clicked.connect(self.create_account)
 
+        # Setting up key variables
+        self.pri_key = None
+        self.pub_key = None
+        self.vault = None
+
     def enable_mfa(self):
         self.checked = self.enableMFA.isChecked()
 
     def create_account(self):
+        otp = ""
         username = self.username.text()
-        if self.checked:
-            print("Is checked\n")
+        pri_key, pub_key = generate_keys()
+        self.save_key(pri_key)
+        self.get_vault_name()
 
-            print(f"Username: {username}")
+        if self.checked:
+            # Create account in database and make password vault with MFA
+            create_cybervault(username, pub_key, pri_key, self.vault, otp)
         else:
-            print("No MFA\n")
-            print(f"Username: {username}")
-        private, public = generate_keys()
-        self.save_key(private)
+            create_cybervault(username, pub_key, pri_key, self.vault)
 
     def save_key(self, pri_key):
-        fname = QFileDialog.getSaveFileName(self, "Save", "", 'Keys (*.pem)')
+        fname = QFileDialog.getSaveFileName(self, "Save Key", "",
+                                            'Key File (*.pem)')
         if fname == ('', ''):
             pass
         else:
@@ -63,6 +71,14 @@ class NewUser(QDialog):
             with open(file, 'wb') as f:
                 f.write(pri_key)
                 f.write(b'\n')
+
+    def get_vault_name(self):
+        vault = QFileDialog.getSaveFileName(self, "Save Vault", "",
+                                            'CyberVault Database (*.cvdb)')
+        if vault == ('', ''):
+            pass
+        else:
+            self.vault = vault[0]
 
 
 class Login(QDialog):
