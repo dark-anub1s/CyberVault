@@ -55,11 +55,14 @@ class NewUser(QDialog):
         self.save_key(private)
 
     def save_key(self, pri_key):
-        filename = QFileDialog.getSaveFileName(self, "Save Private Key", "", 'Key Files (*.pem)')
-        if filename == ('', ''):
+        fname = QFileDialog.getSaveFileName(self, "Save", "", 'Keys (*.pem)')
+        if fname == ('', ''):
             pass
         else:
-            print(filename[0])
+            file = fname[0]
+            with open(file, 'wb') as f:
+                f.write(pri_key)
+                f.write(b'\n')
 
 
 class Login(QDialog):
