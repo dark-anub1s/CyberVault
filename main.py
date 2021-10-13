@@ -1,6 +1,8 @@
+from pyqrcode import *
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
 from functions import generate_keys
+from pyotp import random_base32, TOTP
 from database import create_cybervault
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog
 
@@ -46,7 +48,12 @@ class NewUser(QDialog):
         self.vault = None
 
     def enable_mfa(self):
+        username = self.username.text()
         self.checked = self.enableMFA.isChecked()
+        s_key = random_base32()
+        totp = TOTP(s_key)
+        auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
+
 
     def create_account(self):
         otp = ""
