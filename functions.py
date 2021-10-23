@@ -2,7 +2,6 @@ import os
 import time
 import base64
 import random
-import winreg
 import string
 import pyperclip
 from pathlib import Path
@@ -11,6 +10,9 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
+
+if os.name == 'nt':
+    import winreg
 
 
 def clipboard_wipe(enabled=False, sleep_time=5):

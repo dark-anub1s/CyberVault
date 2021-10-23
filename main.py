@@ -54,7 +54,6 @@ class NewUser(QDialog):
         totp = TOTP(s_key)
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
-
     def create_account(self):
         otp = ""
         username = self.username.text()
