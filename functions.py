@@ -15,12 +15,14 @@ if os.name == 'nt':
     import winreg
 
 
+# Done
 def clipboard_wipe(enabled=False, sleep_time=5):
     while enabled:
         pyperclip.copy("")
         time.sleep(sleep_time)
 
 
+# Done
 def generate_keys():
     modules_length = 2048
 
@@ -36,6 +38,7 @@ def generate_keys():
     return private_key,  public_key
 
 
+# Done
 def rsa_vault_encrypt(public_key, password):
     home = Path.home()
     home = os.path.join(home, "Documents")
@@ -62,6 +65,7 @@ def rsa_vault_encrypt(public_key, password):
             f.write(x)
 
 
+# Done
 def rsa_vault_decrypt(private_key):
     home = Path.home()
     home = os.path.join(home, "Documents")
@@ -84,6 +88,7 @@ def rsa_vault_decrypt(private_key):
         return data.decode("utf-8")
 
 
+# Done
 def aes_vault_encrypt(filename, key):
     key = key.encode("utf-8")
     key = pad(key, AES.block_size)
@@ -103,6 +108,7 @@ def aes_vault_encrypt(filename, key):
     data.close()
 
 
+# Done
 def aes_vault_decrypt(filename, key):
     key = key.encode("utf-8")
     key = pad(key, AES.block_size)

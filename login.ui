@@ -31,17 +31,23 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <widget class="QLabel" name="label">
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(141, 145, 141);</string>
+  </property>
+  <widget class="QPushButton" name="login">
    <property name="geometry">
     <rect>
-     <x>120</x>
-     <y>120</y>
-     <width>191</width>
-     <height>41</height>
+     <x>40</x>
+     <y>285</y>
+     <width>835</width>
+     <height>40</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(231, 208, 162);</string>
+   </property>
    <property name="text">
-    <string>Login Window</string>
+    <string>Login</string>
    </property>
   </widget>
  </widget>
