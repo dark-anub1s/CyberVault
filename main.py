@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from pyqrcode import *
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
