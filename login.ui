@@ -77,7 +77,7 @@
     <rect>
      <x>140</x>
      <y>220</y>
-     <width>240</width>
+     <width>140</width>
      <height>35</height>
     </rect>
    </property>
@@ -91,15 +91,15 @@
     <string>Enter Username: </string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLineEdit" name="user_entry">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>290</x>
      <y>220</y>
-     <width>240</width>
+     <width>250</width>
      <height>35</height>
     </rect>
    </property>
@@ -109,7 +109,7 @@
     <rect>
      <x>140</x>
      <y>270</y>
-     <width>240</width>
+     <width>140</width>
      <height>35</height>
     </rect>
    </property>
@@ -120,18 +120,18 @@
     </font>
    </property>
    <property name="text">
-    <string>Load RSA Key</string>
+    <string>Load RSA Key:</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QLineEdit" name="rsa_key_entry">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>290</x>
      <y>270</y>
-     <width>240</width>
+     <width>500</width>
      <height>35</height>
     </rect>
    </property>
@@ -145,10 +145,10 @@
   <widget class="QPushButton" name="load_rsa_button">
    <property name="geometry">
     <rect>
-     <x>690</x>
-     <y>270</y>
+     <x>475</x>
+     <y>315</y>
      <width>100</width>
-     <height>34</height>
+     <height>35</height>
     </rect>
    </property>
    <property name="styleSheet">
@@ -156,6 +156,46 @@
    </property>
    <property name="text">
     <string>Open RSA Key</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="mfa_label">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>355</y>
+     <width>545</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>11</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Did you enable Multi-Factor Authentication (Google Authenticator) durning sign-up?</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="mfa_checkBox">
+   <property name="geometry">
+    <rect>
+     <x>700</x>
+     <y>355</y>
+     <width>121</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>2FA Enabled</string>
    </property>
   </widget>
  </widget>
