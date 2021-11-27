@@ -213,7 +213,7 @@
     <string>2FA Enabled</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="open_button">
    <property name="geometry">
     <rect>
      <x>50</x>
@@ -229,7 +229,7 @@
     <string>Open Account</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QPushButton" name="main_menu_button">
    <property name="geometry">
     <rect>
      <x>850</x>
