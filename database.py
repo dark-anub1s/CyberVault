@@ -1,8 +1,10 @@
 import os
 import sqlite3
+from PyQt5.QtWidgets import QMessageBox
 from functions import vault_password, rsa_vault_encrypt
 
 
+# Create the main users database
 def create_db():
     conn = sqlite3.connect('users.db')
     cur = conn.cursor()
@@ -17,9 +19,9 @@ def create_db():
     conn.close()
 
 
-# Function takes a username, public key, and private key,
-# Vault file name, and an otp secret key if one is provided.
-def create_cybervault(username, pub, pri, vault, otp_key=None):
+# Function takes a username, public key, and,
+# vault file name, and an otp secret key if one is provided.
+def create_cybervault(username, pub, vault, otp_key=None):
     success = False
 
     if not username:

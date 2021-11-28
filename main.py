@@ -55,6 +55,11 @@ class NewUser(QDialog):
         totp = TOTP(s_key)
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
+        self.otp_popup(auth)
+
+    def otp_popup(self, auth_str):
+        pass
+
     def create_account(self):
         otp = ""
         username = self.username.text()
@@ -98,6 +103,10 @@ class OpenCyberVault(QDialog):
     def __init__(self):
         super(OpenCyberVault, self).__init__()
         loadUi("opencybervault.ui", self)
+        self.main_menu_button.clicked.connect(self.back_to_main)
+
+    def back_to_main(self):
+        widget.setCurrentIndex(widget.currentIndex()-1)
 
 
 if __name__ == '__main__':
