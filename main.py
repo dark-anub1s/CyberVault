@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 from pyqrcode import *
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
@@ -17,7 +18,7 @@ class UI(QMainWindow):
         self.open_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
 
-        exit_app.triggered.connect(lambda: self.app.Quit())
+        self.exit_app.triggered.connect(exit_handler)
 
     def create_account(self):
         newaccountwindow = NewUser()
@@ -116,8 +117,14 @@ class PasswordGenerator(QDialog):
         super(PasswordGenerate, self).__init__()
         loadUi("password.ui", self)
 
+
+def exit_handler():
+    print("Exiting Now")
+    sys.exit(0)
+
 if __name__ == '__main__':
     app = QApplication([])
+    app.aboutToQuit.connect(exit_handler)
     widget = QtWidgets.QStackedWidget()
     mainwindow = UI()
     widget.addWidget(mainwindow)
