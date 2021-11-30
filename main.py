@@ -17,6 +17,8 @@ class UI(QMainWindow):
         self.open_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
 
+        exit_app.triggered.connect(lambda: self.app.Quit())
+
     def create_account(self):
         newaccountwindow = NewUser()
         widget.addWidget(newaccountwindow)
@@ -108,6 +110,11 @@ class OpenCyberVault(QDialog):
     def back_to_main(self):
         widget.setCurrentIndex(widget.currentIndex()-1)
 
+
+class PasswordGenerator(QDialog):
+    def __init__(self):
+        super(PasswordGenerate, self).__init__()
+        loadUi("password.ui", self)
 
 if __name__ == '__main__':
     app = QApplication([])

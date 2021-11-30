@@ -202,17 +202,38 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>25</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="exit_app"/>
+   </widget>
+   <widget class="QMenu" name="menuAccount">
+    <property name="title">
+     <string>Account</string>
+    </property>
+    <addaction name="pass_gen"/>
    </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuAccount"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="pass_gen">
+   <property name="text">
+    <string>Generate Password</string>
+   </property>
+  </action>
+  <action name="exit_app">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="logo.qrc"/>
