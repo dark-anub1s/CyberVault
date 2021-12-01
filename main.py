@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import sys
 from pyqrcode import *
-from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
 from functions import generate_keys
+from PyQt5 import QtWidgets
 from pyotp import random_base32, TOTP
 from database import create_cybervault
-from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
 
 
 # Done
@@ -14,11 +14,15 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         loadUi("cybervault.ui", self)
+        self.app_open()
         self.new_account.clicked.connect(self.create_account)
         self.open_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
 
         self.exit_app.triggered.connect(exit_handler)
+
+    def app_open(self):
+        pass
 
     def create_account(self):
         newaccountwindow = NewUser()
@@ -38,6 +42,8 @@ class UI(QMainWindow):
 
 class NewUser(QDialog):
     def __init__(self):
+        # Setup QR Code Generator Window variable
+        self.qrcodewindow = None
         super(NewUser, self).__init__()
         loadUi("newaccount.ui", self)
 
@@ -58,10 +64,17 @@ class NewUser(QDialog):
         totp = TOTP(s_key)
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
-        self.otp_popup(auth)
+        if self.qrcodewindow is None:
+            self.qrcodewindow = QRCodeGenerator()
 
-    def otp_popup(self, auth_str):
+        self.qrcodewindow.show()
+
+
+
+
+    def qrcode_popup(self, auth_string):
         pass
+
 
     def create_account(self):
         otp = ""
@@ -112,11 +125,16 @@ class OpenCyberVault(QDialog):
         widget.setCurrentIndex(widget.currentIndex()-1)
 
 
-class PasswordGenerator(QDialog):
+class PasswordGenerator(QWidget):
     def __init__(self):
         super(PasswordGenerate, self).__init__()
         loadUi("password.ui", self)
 
+
+class QRCodeGenerator(QWidget):
+    def __init__(self):
+        super(QRCodeGenerator, self).__init__()
+        loadUi("qrpopup.ui", self)
 
 def exit_handler():
     print("Exiting Now")
