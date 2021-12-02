@@ -136,7 +136,7 @@
      <string>New Account</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="open_cybervault">
+   <widget class="QPushButton" name="import_cybervault">
     <property name="geometry">
      <rect>
       <x>480</x>
@@ -163,7 +163,7 @@
      <string notr="true">background-color: rgb(231, 208, 162);</string>
     </property>
     <property name="text">
-     <string>Open CyberVault</string>
+     <string>Import CyberVault</string>
     </property>
    </widget>
    <widget class="QPushButton" name="login_to_account">
@@ -193,7 +193,7 @@
    <zorder>Title</zorder>
    <zorder>info</zorder>
    <zorder>login_to_account</zorder>
-   <zorder>open_cybervault</zorder>
+   <zorder>import_cybervault</zorder>
    <zorder>new_account</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -202,19 +202,21 @@
      <x>0</x>
      <y>0</y>
      <width>960</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="exit_app"/>
+    <addaction name="actionOpen"/>
    </widget>
    <widget class="QMenu" name="menuAccount">
     <property name="title">
      <string>Account</string>
     </property>
+    <addaction name="actionOpen_Vault"/>
+    <addaction name="actionExport_Vault"/>
     <addaction name="pass_gen"/>
    </widget>
    <addaction name="menuFile"/>
@@ -232,6 +234,21 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionOpen_Vault">
+   <property name="text">
+    <string>Import Vault</string>
+   </property>
+  </action>
+  <action name="actionExport_Vault">
+   <property name="text">
+    <string>Export Vault</string>
    </property>
   </action>
  </widget>
