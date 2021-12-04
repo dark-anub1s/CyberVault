@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from pyqrcode import *
+import qrcode
 from PyQt5.uic import loadUi
 from functions import generate_keys
 from PyQt5 import QtWidgets
@@ -18,7 +18,7 @@ class UI(QMainWindow):
         loadUi("cybervault.ui", self)
         self.app_open()
         self.new_account.clicked.connect(self.create_account)
-        self.open_cybervault.clicked.connect(self.open_vault)
+        self.import_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
 
         self.exit_app.triggered.connect(exit_handler)
@@ -138,15 +138,18 @@ class QRCodeGenerator(QWidget):
         super(QRCodeGenerator, self).__init__()
         loadUi("qrpopup.ui", self)
         self.auth = auth_string
-        self.img = pyqrcode.create(self.auth)
+        self.img = qrcode.make(self.auth)
         self.qr = ImageQt(self.img)
 
         pix = QPixmap.fromImage(self.qr)
+
+        self.qrcode_label.setPixmap(pix)
 
 
 def exit_handler():
     print("Exiting Now")
     sys.exit(0)
+
 
 if __name__ == '__main__':
     app = QApplication([])
