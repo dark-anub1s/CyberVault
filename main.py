@@ -6,6 +6,8 @@ from functions import generate_keys
 from PyQt5 import QtWidgets
 from pyotp import random_base32, TOTP
 from database import create_cybervault
+from PIL.ImageQt import ImageQt
+from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
 
 
@@ -65,7 +67,7 @@ class NewUser(QDialog):
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
         if self.qrcodewindow is None:
-            self.qrcodewindow = QRCodeGenerator()
+            self.qrcodewindow = QRCodeGenerator(auth)
 
         self.qrcodewindow.show()
 
@@ -132,9 +134,15 @@ class PasswordGenerator(QWidget):
 
 
 class QRCodeGenerator(QWidget):
-    def __init__(self):
+    def __init__(self, auth_string):
         super(QRCodeGenerator, self).__init__()
         loadUi("qrpopup.ui", self)
+        self.auth = auth_string
+        self.qr = pyqrcode.create(self.auth)
+
+        self.pixmap = QPixmap()
+
+
 
 def exit_handler():
     print("Exiting Now")
