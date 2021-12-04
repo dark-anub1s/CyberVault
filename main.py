@@ -18,7 +18,7 @@ class UI(QMainWindow):
         loadUi("cybervault.ui", self)
         self.app_open()
         self.new_account.clicked.connect(self.create_account)
-        self.open_cybervault.clicked.connect(self.open_vault)
+        self.import_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
 
         self.exit_app.triggered.connect(exit_handler)
@@ -66,17 +66,15 @@ class NewUser(QDialog):
         totp = TOTP(s_key)
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
+<<<<<<< HEAD
         if self.qrcodewindow is None:
             self.qrcodewindow = QRCodeGenerator(auth)
+=======
+        if self.qrcodewindow is not None: return
+>>>>>>> 2afa97cb8cff58e8eb37466ed46cf461e4a87e28
 
+        self.qrcodewindow = QRCodeGenerator()
         self.qrcodewindow.show()
-
-
-
-
-    def qrcode_popup(self, auth_string):
-        pass
-
 
     def create_account(self):
         otp = ""
