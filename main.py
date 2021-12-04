@@ -66,17 +66,8 @@ class NewUser(QDialog):
         totp = TOTP(s_key)
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
-<<<<<<< HEAD
-<<<<<<< HEAD
         if self.qrcodewindow is None:
             self.qrcodewindow = QRCodeGenerator(auth)
-=======
-        if self.qrcodewindow is not None: return
->>>>>>> 2afa97cb8cff58e8eb37466ed46cf461e4a87e28
-=======
-        if self.qrcodewindow is None:
-            self.qrcodewindow = QRCodeGenerator(auth)
->>>>>>> ed1336e2f118777c2f353c3360b785ecbc5cfc36
 
         self.qrcodewindow.show()
 
@@ -147,17 +138,10 @@ class QRCodeGenerator(QWidget):
         super(QRCodeGenerator, self).__init__()
         loadUi("qrpopup.ui", self)
         self.auth = auth_string
-<<<<<<< HEAD
-        self.qr = pyqrcode.create(self.auth)
-
-        self.pixmap = QPixmap()
-
-=======
         self.img = pyqrcode.create(self.auth)
         self.qr = ImageQt(self.img)
 
         pix = QPixmap.fromImage(self.qr)
->>>>>>> ed1336e2f118777c2f353c3360b785ecbc5cfc36
 
 
 def exit_handler():
