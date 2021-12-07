@@ -87,9 +87,9 @@ class NewUser(QDialog):
 
         if self.checked:
             # Create account in database and make password vault with MFA
-            create_cybervault(username, pub_key, pri_key, self.vault, otp)
+            create_cybervault(username, pub_key, self.vault, otp)
         else:
-            create_cybervault(username, pub_key, pri_key, self.vault)
+            create_cybervault(username, pub_key, self.vault)
 
     def save_key(self, pri_key):
         fname = QFileDialog.getSaveFileName(self, "Save Key", "",
