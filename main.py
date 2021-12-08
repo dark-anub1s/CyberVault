@@ -58,12 +58,13 @@ class NewUser(QDialog):
         self.pri_key = None
         self.pub_key = None
         self.vault = None
+        self.s_key = None
 
     def enable_mfa(self):
         username = self.username.text()
         self.checked = self.enableMFA.isChecked()
-        s_key = random_base32()
-        totp = TOTP(s_key)
+        self.s_key = random_base32()
+        totp = TOTP(self.s_key)
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
         if self.qrcodewindow is None:
@@ -72,14 +73,7 @@ class NewUser(QDialog):
         self.qrcodewindow.show()
 
 
-
-
-    def qrcode_popup(self, auth_string):
-        pass
-
-
     def create_account(self):
-        otp = ""
         username = self.username.text()
         pri_key, pub_key = generate_keys()
         self.save_key(pri_key)
@@ -87,7 +81,7 @@ class NewUser(QDialog):
 
         if self.checked:
             # Create account in database and make password vault with MFA
-            create_cybervault(username, pub_key, self.vault, otp)
+            create_cybervault(username, pub_key, self.vault, self.s_key)
         else:
             create_cybervault(username, pub_key, self.vault)
 

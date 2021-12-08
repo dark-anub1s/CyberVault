@@ -11,12 +11,9 @@
 			"file": "main.py",
 			"settings":
 			{
-				"buffer_size": 4532,
-				"line_ending": "Windows"
-			},
-			"undo_stack":
-			[
-			]
+				"buffer_size": 4514,
+				"line_ending": "Unix"
+			}
 		}
 	],
 	"build_system": "Packages/Python/Python.sublime-build",
@@ -46,6 +43,10 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"REmove",
+				"Package Control: Remove Package"
+			],
 			[
 				"install",
 				"Package Control: Install Package"
@@ -83,10 +84,11 @@
 	},
 	"expanded_folders":
 	[
-		"/C/Users/anubis/Documents/Projects/CyberVault"
+		"/home/anubis/Documents/Projects/Python/CyberVault"
 	],
 	"file_history":
 	[
+		"/home/anubis/setup-scripts/kali-setup.sh",
 		"/C/Users/anubis/AppData/Local/Temp/kite_tutorial.py",
 		"/C/Users/anubis/AppData/Roaming/Sublime Text/Packages/Virtualenv/Virtualenv.sublime-settings",
 		"/C/Users/anubis/AppData/Roaming/Sublime Text/Packages/User/Virtualenv.sublime-settings",
@@ -95,7 +97,7 @@
 	],
 	"find":
 	{
-		"height": 27.2
+		"height": 24.0
 	},
 	"find_in_files":
 	{
@@ -139,19 +141,27 @@
 					"semi_transient": true,
 					"settings":
 					{
-						"buffer_size": 4532,
+						"buffer_size": 4514,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								805,
-								805
+								0,
+								0
 							]
 						],
 						"settings":
 						{
+							"WordCount":
+							{
+								"changes": -1,
+								"modified": true,
+								"selection": true,
+								"status": -1,
+								"syntax": "python"
+							},
 							"git_gutter_is_enabled": true,
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"tab_size": 4,
@@ -170,7 +180,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 27.2
+		"height": 24.0
 	},
 	"input":
 	{
@@ -215,7 +225,7 @@
 	"project": "cybervault-project.sublime-project",
 	"replace":
 	{
-		"height": 51.2
+		"height": 44.0
 	},
 	"save_all_on_build": true,
 	"select_file":
