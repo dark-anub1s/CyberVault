@@ -161,3 +161,75 @@ def vault_password():
         # Human Readable password
         password = "".join(random.choices(pass_list, k=25))
     return password
+
+
+def get_reg_key():
+    user_db_code = None
+    with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_CONFIG) as hkey:
+        with winreg.OpenKey(hkey, "SOFTWARE", 0, winreg.KEY_READ) as sub_key:
+            with winreg.CreateKeyEx(sub_key, "CyberVault", 0, winreg.KEY_READ) as vault_key:
+                try:
+                    for x in range(100):
+                        key = winreg.EnumKey(sub_key, x)
+                        if key == 'CyberVault':
+                            user_db_code = winreg.EnumValue(vault_key, 0)[1]
+
+                except OSError:
+                    pass
+            sub_key.Close()
+        hkey.Close()
+    if user_db_code:
+        return user_db_code
+
+
+def user_db_enc(file, key):
+    vkey = base64.b64decode(key)
+    vkey = vkey.decode("UTF-8")
+    aes_vault_encryption(file, vkey)
+
+
+def user_db_dec(file, key):
+    vkey = base64.b64decode(key)
+    vkey = vkey.decode("UTF-8")
+    ase_vault_decryption(file, vkey)
+
+
+def vault_password():
+    pass_list = ""
+    password = ""
+
+    pass_list += string.ascii_lowercase
+    pass_list += string.ascii_uppercase
+    pass_list += string.digits
+    pass_list += string.punctuation
+
+    for _ in range(1):
+        # Human Readable password
+        password = "".join(random.choices(pass_list, k=25))
+    return password
+
+
+def generate_password(upper, lower, digit, special, pass_label, length):
+    """ Length will default to 0, this can be passed in on the call if you chose. strength is set by default to strong.
+This parameter is what sets the complexity of the password (weak, strong, very)."""
+
+    pass_list = ""
+    password = ""
+
+    if upper:
+        pass_list += string.ascii_uppercase
+
+    if lower:
+        pass_list += string.ascii_lowercase
+
+    if digit:
+        pass_list += string.digits
+
+    if special:
+        pass_list += string.punctuation
+
+    for _ in range(1):
+        # Human Readable password
+        password = "".join(random.choices(pass_list, k=length))
+
+    pass_label.set(password)
