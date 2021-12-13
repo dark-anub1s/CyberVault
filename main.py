@@ -4,8 +4,9 @@ import qrcode
 from PyQt5.uic import loadUi
 from functions import generate_keys
 from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 from pyotp import random_base32, TOTP
-from database import create_cybervault
+from database import create_db, create_cybervault
 from PIL.ImageQt import ImageQt
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
@@ -16,6 +17,7 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         loadUi("cybervault.ui", self)
+        create_db()
         self.app_open()
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
@@ -68,24 +70,25 @@ class NewUser(QDialog):
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
         if self.qrcodewindow is None:
-            self.qrcodewindow = QRCodeGenerator(auth)
+            self.qrcodewindow = QRCodeGenerator(auth, self.s_key)
+
 
         self.qrcodewindow.show()
 
 
     def create_account(self):
         username = self.username.text()
-        pri_key, pub_key = generate_keys()
-        self.save_key(pri_key)
+        self.pri_key, self.pub_key = generate_keys()
+        self.save_key()
         self.get_vault_name()
 
         if self.checked:
             # Create account in database and make password vault with MFA
-            create_cybervault(username, pub_key, self.vault, self.s_key)
+            create_cybervault(username, self.pub_key, self.vault, self.s_key)
         else:
-            create_cybervault(username, pub_key, self.vault)
+            create_cybervault(username, self.pub_key, self.vault)
 
-    def save_key(self, pri_key):
+    def save_key(self):
         fname = QFileDialog.getSaveFileName(self, "Save Key", "",
                                             'Key File (*.pem)')
         if fname == ('', ''):
@@ -93,7 +96,7 @@ class NewUser(QDialog):
         else:
             file = fname[0]
             with open(file, 'wb') as f:
-                f.write(pri_key)
+                f.write(self.pri_key)
                 f.write(b'\n')
 
     def get_vault_name(self):
@@ -128,16 +131,26 @@ class PasswordGenerator(QWidget):
 
 
 class QRCodeGenerator(QWidget):
-    def __init__(self, auth_string):
+    def __init__(self, auth_string, s_key):
         super(QRCodeGenerator, self).__init__()
         loadUi("qrpopup.ui", self)
         self.auth = auth_string
         self.img = qrcode.make(self.auth)
         self.qr = ImageQt(self.img)
+        self.verify_btn.clicked.connect(lambda: self.verifyotp(s_key))
+        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
 
         pix = QPixmap.fromImage(self.qr)
 
         self.qrcode_label.setPixmap(pix)
+
+    def verifyotp(self, s_key):
+        mfa_totp = TOTP(s_key)
+        current = self.otp_entry.text()
+
+
+        if mfa_totp.verify(current):
+            self.close()
 
 
 def exit_handler():

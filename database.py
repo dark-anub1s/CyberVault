@@ -32,7 +32,7 @@ def create_cybervault(username, pub, vault, otp_key=None):
         cur = conn.cursor()
 
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS vault
+        CREATE TABLE IF NOT EXISTS cybervault
         (id INT PRIMARY KEY, website_url TEXT, name TEXT,
         username TEXT, password TEXT)
         """)
@@ -41,12 +41,13 @@ def create_cybervault(username, pub, vault, otp_key=None):
         os.remove(vault)
 
     if success:
+        add_user(username, pub, otp_key, vault)
         password = vault_password()
         rsa_vault_encrypt(pub, password)
 
 
 def add_user(username, pub_key, key, vault_location):
-    conn = sqlite3.connect('vault_users.cdbv')
+    conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
 
     if key is not None:
