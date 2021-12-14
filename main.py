@@ -19,13 +19,14 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         loadUi("cybervault.ui", self)
+        self.setFixedSize(960, 540)
         create_db()
         self.app_open()
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
 
-        self.exit_app.triggered.connect(exit_handler)
+        # self.exit_app.triggered.connect(exit_handler)
 
     def app_open(self):
         pass
@@ -126,7 +127,7 @@ class Login(QDialog):
         self.login_btn.clicked.connect(self.login)
 
     def login(self):
-        passvault = PasswordVault('C:/Users/anubis/Documents/Vault_testing/myvault.cvdb')
+        passvault = PasswordVault('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
         widget.addWidget(passvault)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
@@ -175,10 +176,6 @@ class PasswordVault(QDialog):
         loadUi("passwordvault.ui", self)
         self.vault_path = Path(vault)
         # self.account_table.setHorizontalHeaderLabels(["Website", "Entry Name", "Username", "Password"])
-        self.account_table.setColumnWidth(0, 200)
-        self.account_table.setColumnWidth(1, 200)
-        self.account_table.setColumnWidth(2, 200)
-        self.account_table.setColumnWidth(3, 300)
         self.loadlist()
         self.account_list.clicked.connect(self.loadtable)
 
@@ -194,10 +191,38 @@ class PasswordVault(QDialog):
             self.account_list.addItem(entry)
 
     def loadtable(self):
+        self.account_table.setRowCount(15)
+        self.account_table.setColumnCount(4)
+        self.account_table.setColumnWidth(0, 150)
+        self.account_table.setColumnWidth(1, 200)
+        self.account_table.setColumnWidth(2, 150)
+        self.account_table.setColumnWidth(3, 350)
+        self.account_table.clear()
+        account_indexes = []
+        delegate = PasswordDelegate(self.account_table)
+        self.account_table.setItemDelegate(delegate)
+        table_len = 0
         request = self.account_list.currentItem()
-        print(request.text())
-        sqlquary = f"SELECT * WHERE name = {request.text()}%"
 
+        results = self.cur.execute("SELECT * FROM cybervault WHERE name=? LIMIT 15", (request.text(),))
+        tablerow = 0
+        for row in results:
+            account_indexes.append(row[0])
+            self.account_table.setItem(tablerow, 0, QtWidgets.QTableWidgetItem(row[0]))
+            self.account_table.setItem(tablerow, 1, QtWidgets.QTableWidgetItem(row[1]))
+            self.account_table.setItem(tablerow, 2, QtWidgets.QTableWidgetItem(row[2]))
+            self.account_table.setItem(tablerow, 3, QtWidgets.QTableWidgetItem(row[3]))
+
+            tablerow += 1
+
+
+class PasswordDelegate(QtWidgets.QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        if index.column() == 3:
+            style = option.widget.style() or QtWidgets.QApplication.style()
+            hint = style.styleHint(QtWidgets.QStyle.SH_LineEdit_PasswordCharacter)
+            option.text = chr(hint) * len(option.text)
 
 def exit_handler():
     print("Exiting Now")

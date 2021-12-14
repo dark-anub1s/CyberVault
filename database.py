@@ -33,8 +33,8 @@ def create_cybervault(username, pub, vault, otp_key=None):
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS cybervault
-        (id INT PRIMARY KEY, website_url TEXT, name TEXT,
-        username TEXT, password TEXT)
+        (id INT PRIMARY KEY, name TEXT NOT NULL, website_url TEXT,
+        username TEXT, password TEXT UNIQUE)
         """)
         success = True
     except AttributeError:
