@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import sys
 import qrcode
+import sqlite3
+from pathlib import Path
 from PyQt5.uic import loadUi
 from functions import generate_keys
 from PyQt5 import QtWidgets
@@ -61,6 +63,7 @@ class NewUser(QDialog):
         self.pub_key = None
         self.vault = None
         self.s_key = None
+        self.account = False
 
     def enable_mfa(self):
         username = self.username.text()
@@ -85,8 +88,15 @@ class NewUser(QDialog):
         if self.checked:
             # Create account in database and make password vault with MFA
             create_cybervault(username, self.pub_key, self.vault, self.s_key)
+            self.account = True
         else:
             create_cybervault(username, self.pub_key, self.vault)
+            self.account = True
+
+        if self.account:
+            passvault = PasswordVault(self.vault)
+            widget.addWidget(passvault)
+            widget.setCurrentIndex(widget.currentIndex()+1)
 
     def save_key(self):
         fname = QFileDialog.getSaveFileName(self, "Save Key", "",
@@ -112,6 +122,13 @@ class Login(QDialog):
     def __init__(self):
         super(Login, self).__init__()
         loadUi("login.ui", self)
+
+        self.login_btn.clicked.connect(self.login)
+
+    def login(self):
+        passvault = PasswordVault('C:/Users/anubis/Documents/Vault_testing/myvault.cvdb')
+        widget.addWidget(passvault)
+        widget.setCurrentIndex(widget.currentIndex()+1)
 
 
 class OpenCyberVault(QDialog):
@@ -151,6 +168,35 @@ class QRCodeGenerator(QWidget):
 
         if mfa_totp.verify(current):
             self.close()
+
+class PasswordVault(QDialog):
+    def __init__(self, vault):
+        super(PasswordVault, self).__init__()
+        loadUi("passwordvault.ui", self)
+        self.vault_path = Path(vault)
+        # self.account_table.setHorizontalHeaderLabels(["Website", "Entry Name", "Username", "Password"])
+        self.account_table.setColumnWidth(0, 200)
+        self.account_table.setColumnWidth(1, 200)
+        self.account_table.setColumnWidth(2, 200)
+        self.account_table.setColumnWidth(3, 300)
+        self.loadlist()
+        self.account_list.clicked.connect(self.loadtable)
+
+    def loadlist(self):
+        self.conn = sqlite3.connect(self.vault_path)
+        self.cur = self.conn.cursor()
+
+        self.cur.execute("""SELECT name FROM cybervault""")
+        names = self.cur.fetchall()
+
+        for i in range(len(names)):
+            entry = QtWidgets.QListWidgetItem(names[i][0])
+            self.account_list.addItem(entry)
+
+    def loadtable(self):
+        request = self.account_list.currentItem()
+        print(request.text())
+        sqlquary = f"SELECT * WHERE name = {request.text()}%"
 
 
 def exit_handler():
