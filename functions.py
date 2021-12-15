@@ -3,6 +3,8 @@ import time
 import base64
 import random
 import string
+import hashlib
+import requests
 import pyperclip
 from pathlib import Path
 from Crypto import Random
@@ -233,3 +235,32 @@ This parameter is what sets the complexity of the password (weak, strong, very).
         password = "".join(random.choices(pass_list, k=length))
 
     pass_label.set(password)
+
+
+def pwn_checker(password):
+    # Add in function to check a single password or a complete list of passwords.
+    sha_password = hashlib.sha1(password.encode()).hexdigest()
+
+    sha_prefix = sha_password[0:5]
+    sha_postfix = sha_password[5:].upper()
+
+    url = f"https://api.pwnedpasswords.com/range/{sha_prefix}"
+
+    payload = {}
+    headers = {}
+    pwned_dict = {}
+
+    response = requests.request('GET', url, headers=headers, data=payload)
+
+    pwned_list = response.text.split('\r\n')
+
+    for pwned_pass in pwned_list:
+        pwned_hash = pwned_pass.split(":")
+        pwned_dict[pwned_hash[0]] = pwned_hash[1]
+
+    if sha_postfix in pwned_dict.keys():
+        pass
+        # print(f"Password '{password}' has been compromised {pwned_dict[sha_postfix]} times.")
+    else:
+        pass
+        # print(f"Password '{password}' is safe to use.")
