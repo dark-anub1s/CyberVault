@@ -4,7 +4,7 @@ import qrcode
 import sqlite3
 from pathlib import Path
 from PyQt5.uic import loadUi
-from functions import generate_keys
+from functions import generate_keys, pwn_checker
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from pyotp import random_base32, TOTP
@@ -127,9 +127,14 @@ class Login(QDialog):
         self.login_btn.clicked.connect(self.login)
 
     def login(self):
-        passvault = PasswordVault('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
-        widget.addWidget(passvault)
+        # passvault = PasswordVault('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
+        # widget.addWidget(passvault)
+        # widget.setCurrentIndex(widget.currentIndex()+1)
+
+        passcheck = PasswordChecker()
+        widget.addWidget(passcheck)
         widget.setCurrentIndex(widget.currentIndex()+1)
+
 
 
 class OpenCyberVault(QDialog):
@@ -228,7 +233,72 @@ class PasswordDelegate(QtWidgets.QStyledItemDelegate):
 class PasswordChecker(QDialog):
     def __init__(self):
         super(PasswordChecker, self).__init__()
+        # self.setWindowFlags(QtCore.Qt.WindowMinimizeButtonHint, False)
         loadUi("passwordchecker.ui", self)
+        self.index_list = []
+        self.pass_check_table.setColumnWidth(0, 325)
+        self.pass_check_table.setColumnWidth(1, 325)
+        self.pass_check_table.setColumnWidth(2, 365)
+
+        self.check_single_pass_btn.clicked.connect(self.check_single_password)
+        self.check_vault_pass_btn.clicked.connect(self.check_vault_passwords)
+        self.load_vault_btn.clicked.connect(self.create_table)
+        self.pass_check_table.clicked.connect(self.get_indexs)
+
+
+    def create_table(self):
+        vault_path = Path('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
+        conn = sqlite3.connect(vault_path)
+        self.cur = conn.cursor()
+
+        db = self.cur.execute("""SELECT * FROM cybervault""")
+        table_rows = db.fetchall()
+        table_rows = len(table_rows)
+        self.pass_check_table.setRowCount(table_rows)
+
+        self.load_vault()
+
+    def get_indexs(self):
+        self.index_list.append(self.pass_check_table.currentRow())
+
+    def load_vault(self):
+        results = self.cur.execute("SELECT * FROM cybervault")
+        tablerow = 0
+        for row in results:
+            self.pass_check_table.setItem(tablerow, 0, QtWidgets.QTableWidgetItem(row[0]))
+            self.pass_check_table.setItem(tablerow, 1, QtWidgets.QTableWidgetItem(row[2]))
+            self.pass_check_table.setItem(tablerow, 2, QtWidgets.QTableWidgetItem(row[3]))
+
+            tablerow += 1
+
+    def check_single_password(self):
+        password = self.single_pass_entry.text()
+
+        result, num = pwn_checker(password)
+
+        if result == True:
+            self.single_pass_result_lable.setText(f"Password '{password}' has been compromised {num} times")
+            self.single_pass_result_lable.setStyleSheet("background-color: yellow")
+        elif result == False:
+            self.single_pass_result_lable.setText(f"Password '{password}' is safe to use")
+            self.single_pass_result_lable.setStyleSheet("background-color: lightgreen")
+
+    def check_vault_passwords(self):
+        for idx in self.index_list:
+            pass_to_check = self.pass_check_table.item(idx, 2).text()
+            result, num = pwn_checker(pass_to_check)
+            if result:
+                self.pass_check_table.item(idx, 0).setStyleSheet("background-color: yellow")
+                self.pass_check_table.item(idx, 1).setStyleSheet("background-color: yellow")
+                self.pass_check_table.item(idx, 2).setStyleSheet("background-color: yellow")
+            elif result == False:
+                self.pass_check_table.item(idx, 0).setStyleSheet("background-color: lightgreen")
+                self.pass_check_table.item(idx, 1).setStyleSheet("background-color: lightgreen")
+                self.pass_check_table.item(idx, 2).setStyleSheet("background-color: lightgreen")
+
+            else:
+                pass
+        self.index_list.clear()
 
 def exit_handler():
     print("Exiting Now")

@@ -259,8 +259,8 @@ def pwn_checker(password):
         pwned_dict[pwned_hash[0]] = pwned_hash[1]
 
     if sha_postfix in pwned_dict.keys():
-        pass
+        return True, pwned_dict[sha_postfix]
         # print(f"Password '{password}' has been compromised {pwned_dict[sha_postfix]} times.")
     else:
-        pass
+        return False, 0
         # print(f"Password '{password}' is safe to use.")
