@@ -224,6 +224,12 @@ class PasswordDelegate(QtWidgets.QStyledItemDelegate):
             hint = style.styleHint(QtWidgets.QStyle.SH_LineEdit_PasswordCharacter)
             option.text = chr(hint) * len(option.text)
 
+
+class PasswordChecker(QDialog):
+    def __init__(self):
+        super(PasswordChecker, self).__init__()
+        loadUi("passwordchecker.ui", self)
+
 def exit_handler():
     print("Exiting Now")
     sys.exit(0)
