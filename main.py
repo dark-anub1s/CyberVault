@@ -19,7 +19,6 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         loadUi("cybervault.ui", self)
-        self.setFixedSize(960, 540)
         create_db()
         self.app_open()
         self.new_account.clicked.connect(self.create_account)
@@ -234,7 +233,6 @@ class PasswordDelegate(QtWidgets.QStyledItemDelegate):
 class PasswordChecker(QDialog):
     def __init__(self):
         super(PasswordChecker, self).__init__()
-        # self.setWindowFlags(QtCore.Qt.WindowMinimizeButtonHint, False)
         loadUi("passwordchecker.ui", self)
         self.index_list = []
         self.pass_check_table.setStyleSheet("background-color: rgb(141, 145, 141);")
