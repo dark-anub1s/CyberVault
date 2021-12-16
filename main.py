@@ -10,7 +10,7 @@ from PyQt5 import QtCore
 from pyotp import random_base32, TOTP
 from database import create_db, create_cybervault
 from PIL.ImageQt import ImageQt
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QFont, QBrush, QColor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
 
 
@@ -128,6 +128,7 @@ class Login(QDialog):
 
     def login(self):
         # passvault = PasswordVault('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
+        # passvault = PasswordVault(/home/anubis/Documents/Vault_testing/thiggins.cvdb')
         # widget.addWidget(passvault)
         # widget.setCurrentIndex(widget.currentIndex()+1)
 
@@ -236,6 +237,7 @@ class PasswordChecker(QDialog):
         # self.setWindowFlags(QtCore.Qt.WindowMinimizeButtonHint, False)
         loadUi("passwordchecker.ui", self)
         self.index_list = []
+        self.pass_check_table.setStyleSheet("background-color: rgb(141, 145, 141);")
         self.pass_check_table.setColumnWidth(0, 325)
         self.pass_check_table.setColumnWidth(1, 325)
         self.pass_check_table.setColumnWidth(2, 365)
@@ -247,7 +249,8 @@ class PasswordChecker(QDialog):
 
 
     def create_table(self):
-        vault_path = Path('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
+        # vault_path = Path('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
+        vault_path = Path('/home/anubis/Documents/Vault_testing/thiggins.cvdb')
         conn = sqlite3.connect(vault_path)
         self.cur = conn.cursor()
 
@@ -278,26 +281,39 @@ class PasswordChecker(QDialog):
 
         if result == True:
             self.single_pass_result_lable.setText(f"Password '{password}' has been compromised {num} times")
-            self.single_pass_result_lable.setStyleSheet("background-color: yellow")
+            self.single_pass_result_lable.setStyleSheet("background-color: rgb(255, 255, 0);")
         elif result == False:
             self.single_pass_result_lable.setText(f"Password '{password}' is safe to use")
-            self.single_pass_result_lable.setStyleSheet("background-color: lightgreen")
+            self.single_pass_result_lable.setStyleSheet("background-color: rgb(144, 238, 144);")
 
     def check_vault_passwords(self):
+        font = QFont()
+        font.setBold(True)
+        ybrush = QBrush(QColor(255, 255, 0))
+        gbrush = QBrush(QColor(144, 238, 144))
+
         for idx in self.index_list:
             pass_to_check = self.pass_check_table.item(idx, 2).text()
             result, num = pwn_checker(pass_to_check)
             if result:
-                self.pass_check_table.item(idx, 0).setStyleSheet("background-color: yellow")
-                self.pass_check_table.item(idx, 1).setStyleSheet("background-color: yellow")
-                self.pass_check_table.item(idx, 2).setStyleSheet("background-color: yellow")
+                self.pass_check_table.item(idx, 0).setFont(font)
+                self.pass_check_table.item(idx, 0).setBackground(ybrush)
+                self.pass_check_table.item(idx, 1).setFont(font)
+                self.pass_check_table.item(idx, 1).setBackground(ybrush)
+                self.pass_check_table.item(idx, 2).setFont(font)
+                self.pass_check_table.item(idx, 2).setBackground(ybrush)
+
             elif result == False:
-                self.pass_check_table.item(idx, 0).setStyleSheet("background-color: lightgreen")
-                self.pass_check_table.item(idx, 1).setStyleSheet("background-color: lightgreen")
-                self.pass_check_table.item(idx, 2).setStyleSheet("background-color: lightgreen")
+                self.pass_check_table.item(idx, 0).setFont(font)
+                self.pass_check_table.item(idx, 0).setBackground(gbrush)
+                self.pass_check_table.item(idx, 1).setFont(font)
+                self.pass_check_table.item(idx, 1).setBackground(gbrush)
+                self.pass_check_table.item(idx, 2).setFont(font)
+                self.pass_check_table.item(idx, 2).setBackground(gbrush)
 
             else:
                 pass
+
         self.index_list.clear()
 
 def exit_handler():
