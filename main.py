@@ -127,6 +127,10 @@ class Login(QDialog):
         loadUi("login.ui", self)
         self.home = Path.home()
 
+        self.auth_code_lable.hide()
+        self.auth_code_entry.hide()
+        self.verify_code_btn.hide()
+
         self.login_btn.clicked.connect(self.login)
         self.load_rsa_button.clicked.connect(self.loadkey)
 
@@ -142,15 +146,18 @@ class Login(QDialog):
         pri_key = self.rsa_key_entry.text()
         self.checked = self.mfa_checkBox.isChecked()
 
-        user, pub_key, vault, otp_s_key = get_user(username)
+        user, pub_key, self.vault, self.otp_s_key = get_user(username)
 
         if user:
-            if self.checked and otp_s_key:
-                self.mfa_check = QRCodeGenerator(otp_s_key, login=True)
-                self.mfa_check.show()
-            elif not self.checked and otp_s_key:
+            if self.checked and self.otp_s_key:
+                self.login_btn.setEnabled(False)
+                self.auth_code_lable.show()
+                self.auth_code_entry.show()
+                self.verify_code_btn.show()
+                self.verify_code_btn.clicked.connect(self.verify_login)
+            elif not self.checked and self.otp_s_key:
                 pass
-            elif self.checked and not otp_s_key:
+            elif self.checked and not self.otp_s_key:
                 self.mfa_checkBox.setChecked(False)
             else:
                 pass
@@ -158,13 +165,16 @@ class Login(QDialog):
         else:
             pass
 
-        
+    def verify_login(self):
+        code = self.auth_code_entry.text()
+        self.mfa_check = QRCodeGenerator(self.otp_s_key, login=True, current_code=code)
+        self.mfa_check.verifyotp()
 
-    def unlock_vault(self):
         result = self.mfa_check.get_verify()
-        print(f"Result of Get Verify: {result}")
-
-
+        if result:
+            passvault = PasswordVault(self.vault)
+            widget.addWidget(passvault)
+            widget.setCurrentIndex(widget.currentIndex()+1)
 
 
 class OpenCyberVault(QDialog):
@@ -184,13 +194,15 @@ class PasswordGenerator(QWidget):
 
 
 class QRCodeGenerator(QWidget):
-    def __init__(self, s_key, auth_string=None, login=False):
+    def __init__(self, s_key, auth_string=None, login=False, current_code=None):
         super(QRCodeGenerator, self).__init__()
         loadUi("qrpopup.ui", self)
         self.verified = None
+        self.s_key = s_key
+        self.current = current_code
         self.login_to_account = login
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.verify_btn.clicked.connect(lambda: self.verifyotp(s_key))
+        self.verify_btn.clicked.connect(self.verifyotp)
 
         if not self.login_to_account:
             self.auth = auth_string
@@ -198,14 +210,15 @@ class QRCodeGenerator(QWidget):
             self.qr = ImageQt(self.img)
             pix = QPixmap.fromImage(self.qr)
             self.qrcode_label.setPixmap(pix)
-        
 
-    def verifyotp(self, s_key):
-        mfa_totp = TOTP(s_key)
-        current = self.otp_entry.text()
+    def verifyotp(self):
+        mfa_totp = TOTP(self.s_key)
+        if not self.login_to_account:
+            self.current = self.otp_entry.text()
+        else:
+            pass
 
-
-        if mfa_totp.verify(current):
+        if mfa_totp.verify(self.current):
             if self.login_to_account:
                 self.verified = True
 
@@ -213,6 +226,7 @@ class QRCodeGenerator(QWidget):
 
     def get_verify(self):
         return self.verified
+
 
 class PasswordVault(QDialog):
     def __init__(self, vault):
