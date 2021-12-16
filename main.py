@@ -265,10 +265,10 @@ class PasswordVault(QDialog):
     def loadtable(self):
         self.account_table.setRowCount(15)
         self.account_table.setColumnCount(4)
-        self.account_table.setColumnWidth(0, 150)
-        self.account_table.setColumnWidth(1, 200)
-        self.account_table.setColumnWidth(2, 150)
-        self.account_table.setColumnWidth(3, 350)
+        self.account_table.setColumnWidth(0, 163)
+        self.account_table.setColumnWidth(1, 225)
+        self.account_table.setColumnWidth(2, 173)
+        self.account_table.setColumnWidth(3, 343)
         self.account_table.clear()
         account_indexes = []
         delegate = PasswordDelegate(self.account_table)
