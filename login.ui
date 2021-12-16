@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>LoginWindow</class>
- <widget class="QDialog" name="LoginWindow">
+ <class>login_window</class>
+ <widget class="QDialog" name="login_window">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1080</width>
-    <height>920</height>
+    <width>980</width>
+    <height>450</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,60 +18,41 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>1080</width>
-    <height>920</height>
+    <width>980</width>
+    <height>450</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1080</width>
-    <height>920</height>
+    <width>980</width>
+    <height>450</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Login</string>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(141, 145, 141);</string>
   </property>
-  <widget class="QPushButton" name="login_btn">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>400</y>
-     <width>835</width>
-     <height>40</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Arial</family>
-    </font>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">background-color: rgb(231, 208, 162);</string>
-   </property>
-   <property name="text">
-    <string>Login</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="login_label">
    <property name="geometry">
     <rect>
-     <x>325</x>
+     <x>10</x>
      <y>10</y>
-     <width>300</width>
-     <height>45</height>
+     <width>960</width>
+     <height>50</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Arial</family>
      <pointsize>14</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
-    <string>Login</string>
+    <string>Login to your CyberVault</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
@@ -80,9 +61,9 @@
   <widget class="QLabel" name="user_label">
    <property name="geometry">
     <rect>
-     <x>100</x>
-     <y>220</y>
-     <width>180</width>
+     <x>10</x>
+     <y>150</y>
+     <width>200</width>
      <height>35</height>
     </rect>
    </property>
@@ -90,30 +71,38 @@
     <font>
      <family>Arial</family>
      <pointsize>14</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
     <string>Enter Username: </string>
    </property>
-   <property name="alignment">
-    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-   </property>
   </widget>
   <widget class="QLineEdit" name="user_entry">
    <property name="geometry">
     <rect>
-     <x>290</x>
-     <y>220</y>
+     <x>220</x>
+     <y>150</y>
      <width>250</width>
      <height>35</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(255, 255, 255);</string>
    </property>
   </widget>
   <widget class="QLabel" name="rsa_key_label">
    <property name="geometry">
     <rect>
-     <x>100</x>
-     <y>270</y>
+     <x>10</x>
+     <y>200</y>
      <width>180</width>
      <height>35</height>
     </rect>
@@ -122,6 +111,8 @@
     <font>
      <family>Arial</family>
      <pointsize>14</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -134,14 +125,23 @@
   <widget class="QLineEdit" name="rsa_key_entry">
    <property name="geometry">
     <rect>
-     <x>290</x>
-     <y>270</y>
+     <x>200</x>
+     <y>200</y>
      <width>500</width>
      <height>35</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
    <property name="focusPolicy">
     <enum>Qt::StrongFocus</enum>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(255, 255, 255);</string>
    </property>
    <property name="echoMode">
     <enum>QLineEdit::Password</enum>
@@ -150,15 +150,16 @@
   <widget class="QPushButton" name="load_rsa_button">
    <property name="geometry">
     <rect>
-     <x>800</x>
-     <y>270</y>
-     <width>100</width>
+     <x>710</x>
+     <y>200</y>
+     <width>150</width>
      <height>35</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Arial</family>
+     <pointsize>12</pointsize>
     </font>
    </property>
    <property name="styleSheet">
@@ -171,16 +172,16 @@
   <widget class="QLabel" name="mfa_label">
    <property name="geometry">
     <rect>
-     <x>100</x>
-     <y>310</y>
-     <width>500</width>
+     <x>10</x>
+     <y>245</y>
+     <width>550</width>
      <height>35</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Arial</family>
-     <pointsize>11</pointsize>
+     <pointsize>12</pointsize>
     </font>
    </property>
    <property name="text">
@@ -190,8 +191,8 @@
   <widget class="QCheckBox" name="mfa_checkBox">
    <property name="geometry">
     <rect>
-     <x>610</x>
-     <y>310</y>
+     <x>570</x>
+     <y>245</y>
      <width>150</width>
      <height>35</height>
     </rect>
@@ -211,16 +212,18 @@
   <widget class="QLabel" name="auth_code_lable">
    <property name="geometry">
     <rect>
-     <x>100</x>
-     <y>350</y>
-     <width>190</width>
+     <x>10</x>
+     <y>290</y>
+     <width>250</width>
      <height>30</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Arial</family>
-     <pointsize>10</pointsize>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -230,25 +233,40 @@
   <widget class="QLineEdit" name="auth_code_entry">
    <property name="geometry">
     <rect>
-     <x>300</x>
-     <y>350</y>
+     <x>270</x>
+     <y>290</y>
      <width>125</width>
-     <height>30</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="verify_code_btn">
-   <property name="geometry">
-    <rect>
-     <x>435</x>
-     <y>350</y>
-     <width>150</width>
      <height>30</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Arial</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="verify_code_btn">
+   <property name="geometry">
+    <rect>
+     <x>405</x>
+     <y>290</y>
+     <width>200</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="styleSheet">
@@ -257,6 +275,30 @@
    </property>
    <property name="text">
     <string>Verify Auth Code</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="login_btn">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>390</y>
+     <width>960</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(231, 208, 162);</string>
+   </property>
+   <property name="text">
+    <string>Login</string>
    </property>
   </widget>
  </widget>

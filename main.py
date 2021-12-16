@@ -21,6 +21,7 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         loadUi("cybervault.ui", self)
+        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint, False)
         create_db()
         self.app_open()
         self.new_account.clicked.connect(self.create_account)
@@ -146,24 +147,34 @@ class Login(QDialog):
         pri_key = self.rsa_key_entry.text()
         self.checked = self.mfa_checkBox.isChecked()
 
-        user, pub_key, self.vault, self.otp_s_key = get_user(username)
+        if username:
+            user, pub_key, self.vault, self.otp_s_key = get_user(username)
+            if user:
+                # If User has MFA Enabled
+                if self.checked and self.otp_s_key:
+                    self.login_btn.setEnabled(False)
+                    self.auth_code_lable.show()
+                    self.auth_code_entry.show()
+                    self.verify_code_btn.show()
+                    self.verify_code_btn.clicked.connect(self.verify_login)
+                # Checks if MFA is enabled but user is not check the box
+                elif not self.checked and self.otp_s_key:
+                    pass
+                # Checks if the box is checked but no opt key was found in database
+                elif self.checked and not self.otp_s_key:
+                    self.mfa_checkBox.setChecked(False)
+                    # self.open_vault()
+                elif not self.checked and not self.otp_s_key:
+                    self.open_vault()
+                else:
+                    pass
 
-        if user:
-            if self.checked and self.otp_s_key:
-                self.login_btn.setEnabled(False)
-                self.auth_code_lable.show()
-                self.auth_code_entry.show()
-                self.verify_code_btn.show()
-                self.verify_code_btn.clicked.connect(self.verify_login)
-            elif not self.checked and self.otp_s_key:
-                pass
-            elif self.checked and not self.otp_s_key:
-                self.mfa_checkBox.setChecked(False)
             else:
                 pass
-
         else:
             pass
+
+
 
     def verify_login(self):
         code = self.auth_code_entry.text()
@@ -172,9 +183,12 @@ class Login(QDialog):
 
         result = self.mfa_check.get_verify()
         if result:
-            passvault = PasswordVault(self.vault)
-            widget.addWidget(passvault)
-            widget.setCurrentIndex(widget.currentIndex()+1)
+            self.open_vault()
+
+    def open_vault(self):
+        passvault = PasswordVault(self.vault)
+        widget.addWidget(passvault)
+        widget.setCurrentIndex(widget.currentIndex()+1)
 
 
 class OpenCyberVault(QDialog):
@@ -301,7 +315,7 @@ class PasswordChecker(QDialog):
 
     def create_table(self):
         # vault_path = Path('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
-        vault_path = Path('/home/anubis/Documents/Vault_testing/thiggins.cvdb')
+        # vault_path = Path('/home/anubis/Documents/Vault_testing/thiggins.cvdb')
         conn = sqlite3.connect(vault_path)
         self.cur = conn.cursor()
 

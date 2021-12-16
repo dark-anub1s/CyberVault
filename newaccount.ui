@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>960</width>
-    <height>540</height>
+    <width>980</width>
+    <height>450</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,14 +18,14 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>960</width>
-    <height>540</height>
+    <width>980</width>
+    <height>450</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>960</width>
-    <height>540</height>
+    <width>980</width>
+    <height>450</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -42,11 +42,17 @@
   <widget class="QLabel" name="Title">
    <property name="geometry">
     <rect>
-     <x>325</x>
+     <x>10</x>
      <y>10</y>
-     <width>300</width>
+     <width>960</width>
      <height>45</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
    </property>
    <property name="font">
     <font>
@@ -69,8 +75,8 @@
   <widget class="QLabel" name="username_label">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>220</y>
+     <x>10</x>
+     <y>150</y>
      <width>195</width>
      <height>35</height>
     </rect>
@@ -90,9 +96,9 @@
   <widget class="QLineEdit" name="username">
    <property name="geometry">
     <rect>
-     <x>350</x>
-     <y>220</y>
-     <width>195</width>
+     <x>220</x>
+     <y>150</y>
+     <width>250</width>
      <height>35</height>
     </rect>
    </property>
@@ -109,16 +115,16 @@
   <widget class="QCheckBox" name="enableMFA">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>220</y>
-     <width>175</width>
+     <x>480</x>
+     <y>150</y>
+     <width>150</width>
      <height>35</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Arial</family>
-     <pointsize>14</pointsize>
+     <pointsize>12</pointsize>
      <weight>75</weight>
      <bold>true</bold>
     </font>
@@ -127,7 +133,7 @@
     <bool>false</bool>
    </property>
    <property name="styleSheet">
-    <string notr="true">color: rgb(231, 208, 162);</string>
+    <string notr="true">color: rgb(0, 0, 0);</string>
    </property>
    <property name="text">
     <string>Enable MFA</string>
@@ -136,9 +142,9 @@
   <widget class="QPushButton" name="create_account_button">
    <property name="geometry">
     <rect>
-     <x>150</x>
+     <x>10</x>
      <y>300</y>
-     <width>600</width>
+     <width>960</width>
      <height>45</height>
     </rect>
    </property>
