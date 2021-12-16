@@ -11,8 +11,8 @@ def create_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users
-    (username TEXT PRIMARY KEY NOT NULL, public_key TEXT UNIQUE,
-    vault_location TEXT, otp_key TEXT)
+    (username TEXT PRIMARY KEY NOT NULL UNIQUE, public_key TEXT NOT NULL UNIQUE,
+    vault_location TEXT NOT NULL UNIQUE, otp_key TEXT UNIQUE)
     """)
 
     conn.commit()
@@ -67,7 +67,12 @@ def add_user(username, pub_key, key, vault_location):
 
 
 def get_user(username):
-    conn = sqlite3.connect('vault_users.cdbv')
+    uname = None
+    pkey = None
+    vault_location = None
+    otp_key = None
+
+    conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM users WHERE username=?", (username,))
@@ -83,3 +88,5 @@ def get_user(username):
 
     if uname:
         return uname, pkey, vault_location, otp_key
+    else:
+        return

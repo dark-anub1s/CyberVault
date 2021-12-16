@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import time
 import qrcode
 import sqlite3
 from pathlib import Path
@@ -7,8 +8,9 @@ from PyQt5.uic import loadUi
 from functions import generate_keys, pwn_checker
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
+from PyQt5.QtCore import QEventLoop
 from pyotp import random_base32, TOTP
-from database import create_db, create_cybervault
+from database import create_db, create_cybervault, get_user
 from PIL.ImageQt import ImageQt
 from PyQt5.QtGui import QPixmap, QImage, QFont, QBrush, QColor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
@@ -52,6 +54,7 @@ class NewUser(QDialog):
         self.qrcodewindow = None
         super(NewUser, self).__init__()
         loadUi("newaccount.ui", self)
+        self.home = Path.home()
 
         # Setting up on screen options
         self.checked = None
@@ -73,7 +76,7 @@ class NewUser(QDialog):
         auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
 
         if self.qrcodewindow is None:
-            self.qrcodewindow = QRCodeGenerator(auth, self.s_key)
+            self.qrcodewindow = QRCodeGenerator(self.s_key, auth)
 
 
         self.qrcodewindow.show()
@@ -99,7 +102,7 @@ class NewUser(QDialog):
             widget.setCurrentIndex(widget.currentIndex()+1)
 
     def save_key(self):
-        fname = QFileDialog.getSaveFileName(self, "Save Key", "",
+        fname = QFileDialog.getSaveFileName(self, "Save Key", str(self.home),
                                             'Key File (*.pem)')
         if fname == ('', ''):
             pass
@@ -110,7 +113,7 @@ class NewUser(QDialog):
                 f.write(b'\n')
 
     def get_vault_name(self):
-        vault = QFileDialog.getSaveFileName(self, "Save Vault", "",
+        vault = QFileDialog.getSaveFileName(self, "Save Vault", str(self.home),
                                             'CyberVault Database (*.cvdb)')
         if vault == ('', ''):
             pass
@@ -122,18 +125,45 @@ class Login(QDialog):
     def __init__(self):
         super(Login, self).__init__()
         loadUi("login.ui", self)
+        self.home = Path.home()
 
         self.login_btn.clicked.connect(self.login)
+        self.load_rsa_button.clicked.connect(self.loadkey)
+
+    def loadkey(self):
+        self.pri_key = None
+
+        fname = QFileDialog.getOpenFileName(self, 'Load RSA Key', str(self.home), 'Key File (*.pem)')
+        self.rsa_key_entry.setText(fname[0])
+
 
     def login(self):
-        # passvault = PasswordVault('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
-        # passvault = PasswordVault(/home/anubis/Documents/Vault_testing/thiggins.cvdb')
-        # widget.addWidget(passvault)
-        # widget.setCurrentIndex(widget.currentIndex()+1)
+        username = self.user_entry.text()
+        pri_key = self.rsa_key_entry.text()
+        self.checked = self.mfa_checkBox.isChecked()
 
-        passcheck = PasswordChecker()
-        widget.addWidget(passcheck)
-        widget.setCurrentIndex(widget.currentIndex()+1)
+        user, pub_key, vault, otp_s_key = get_user(username)
+
+        if user:
+            if self.checked and otp_s_key:
+                self.mfa_check = QRCodeGenerator(otp_s_key, login=True)
+                self.mfa_check.show()
+            elif not self.checked and otp_s_key:
+                pass
+            elif self.checked and not otp_s_key:
+                self.mfa_checkBox.setChecked(False)
+            else:
+                pass
+
+        else:
+            pass
+
+        
+
+    def unlock_vault(self):
+        result = self.mfa_check.get_verify()
+        print(f"Result of Get Verify: {result}")
+
 
 
 
@@ -154,18 +184,21 @@ class PasswordGenerator(QWidget):
 
 
 class QRCodeGenerator(QWidget):
-    def __init__(self, auth_string, s_key):
+    def __init__(self, s_key, auth_string=None, login=False):
         super(QRCodeGenerator, self).__init__()
         loadUi("qrpopup.ui", self)
-        self.auth = auth_string
-        self.img = qrcode.make(self.auth)
-        self.qr = ImageQt(self.img)
-        self.verify_btn.clicked.connect(lambda: self.verifyotp(s_key))
+        self.verified = None
+        self.login_to_account = login
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+        self.verify_btn.clicked.connect(lambda: self.verifyotp(s_key))
 
-        pix = QPixmap.fromImage(self.qr)
-
-        self.qrcode_label.setPixmap(pix)
+        if not self.login_to_account:
+            self.auth = auth_string
+            self.img = qrcode.make(self.auth)
+            self.qr = ImageQt(self.img)
+            pix = QPixmap.fromImage(self.qr)
+            self.qrcode_label.setPixmap(pix)
+        
 
     def verifyotp(self, s_key):
         mfa_totp = TOTP(s_key)
@@ -173,7 +206,13 @@ class QRCodeGenerator(QWidget):
 
 
         if mfa_totp.verify(current):
+            if self.login_to_account:
+                self.verified = True
+
             self.close()
+
+    def get_verify(self):
+        return self.verified
 
 class PasswordVault(QDialog):
     def __init__(self, vault):
