@@ -11,7 +11,7 @@ def create_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users
-    (username TEXT PRIMARY KEY NOT NULL UNIQUE, public_key TEXT NOT NULL UNIQUE,
+    (username TEXT NOT NULL UNIQUE, public_key TEXT NOT NULL UNIQUE,
     vault_location TEXT NOT NULL UNIQUE, otp_key TEXT UNIQUE)
     """)
 
@@ -33,7 +33,7 @@ def create_cybervault(username, pub, vault, otp_key=None):
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS cybervault
-        (id INT PRIMARY KEY, name TEXT NOT NULL, website_url TEXT,
+        (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, website_url TEXT,
         username TEXT, password TEXT UNIQUE)
         """)
         success = True
@@ -90,3 +90,22 @@ def get_user(username):
         return uname, pkey, vault_location, otp_key
     else:
         return
+
+def add_entry(vault, entryname, url, user, passwd):
+    conn = sqlite3.connect(vault)
+    cursor = conn.cursor()
+
+    name = entryname
+    web_url = url
+    username = user
+    password = passwd
+
+    entries = [name, web_url, username, password]
+    cursor.execute("""
+    INSERT INTO cybervault ("name", "website_url", "username", "password") VALUES(?, ?, ?, ?)
+    """, entries)
+
+    conn.commit()
+    conn.close()
+
+    return True

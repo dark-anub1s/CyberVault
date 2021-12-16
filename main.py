@@ -10,7 +10,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QEventLoop
 from pyotp import random_base32, TOTP
-from database import create_db, create_cybervault, get_user
+from database import create_db, create_cybervault, get_user, add_entry
 from PIL.ImageQt import ImageQt
 from PyQt5.QtGui import QPixmap, QImage, QFont, QBrush, QColor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
@@ -246,12 +246,27 @@ class PasswordVault(QDialog):
     def __init__(self, vault):
         super(PasswordVault, self).__init__()
         loadUi("passwordvault.ui", self)
+
+        # Setup window entry boxes and buttons to be disabled at start
+        self.name_entry.setEnabled(False)
+        self.web_url_entry.setEnabled(False)
+        self.user_entry.setEnabled(False)
+        self.password_entry.setEnabled(False)
+        self.submit_btn.setEnabled(False)
+        self.add_entry_btn.setEnabled(False)
+        self.submit_btn.hide()
+        self.update_entry_btn.hide()
+        self.delete_entry_btn.hide()
+
         self.vault_path = Path(vault)
-        # self.account_table.setHorizontalHeaderLabels(["Website", "Entry Name", "Username", "Password"])
         self.loadlist()
+
+        self.enable_checkbox.stateChanged.connect(self.checked)
         self.account_list.clicked.connect(self.loadtable)
+        self.add_entry_btn.clicked.connect(self.add_entry)
 
     def loadlist(self):
+        self.account_list.clear()
         self.conn = sqlite3.connect(self.vault_path)
         self.cur = self.conn.cursor()
 
@@ -280,12 +295,60 @@ class PasswordVault(QDialog):
         tablerow = 0
         for row in results:
             account_indexes.append(row[0])
-            self.account_table.setItem(tablerow, 0, QtWidgets.QTableWidgetItem(row[0]))
-            self.account_table.setItem(tablerow, 1, QtWidgets.QTableWidgetItem(row[1]))
-            self.account_table.setItem(tablerow, 2, QtWidgets.QTableWidgetItem(row[2]))
-            self.account_table.setItem(tablerow, 3, QtWidgets.QTableWidgetItem(row[3]))
+            self.account_table.setItem(tablerow, 0, QtWidgets.QTableWidgetItem(row[1]))
+            self.account_table.setItem(tablerow, 1, QtWidgets.QTableWidgetItem(row[2]))
+            self.account_table.setItem(tablerow, 2, QtWidgets.QTableWidgetItem(row[3]))
+            self.account_table.setItem(tablerow, 3, QtWidgets.QTableWidgetItem(row[4]))
 
             tablerow += 1
+
+    def checked(self):
+        if self.enable_checkbox.isChecked():
+            self.entry_enable()
+        else:
+            self.entry_disable()
+
+    def entry_enable(self):
+        self.name_entry.setEnabled(True)
+        self.web_url_entry.setEnabled(True)
+        self.user_entry.setEnabled(True)
+        self.password_entry.setEnabled(True)
+        self.submit_btn.setEnabled(True)
+        self.add_entry_btn.setEnabled(True)
+
+    def entry_disable(self):
+        self.name_entry.setEnabled(False)
+        self.web_url_entry.setEnabled(False)
+        self.user_entry.setEnabled(False)
+        self.password_entry.setEnabled(False)
+        self.submit_btn.setEnabled(False)
+        self.add_entry_btn.setEnabled(False)
+
+
+    def add_entry(self):
+        self.entry_name = self.name_entry.text()
+        self.web_url = self.web_url_entry.text()
+        self.username = self.user_entry.text()
+        self.passwd = self.password_entry.text()
+
+        if self.entry_name and self.web_url and self.username and self.passwd:
+            self.submit_btn.show()
+            self.submit_btn.setEnabled(True)
+            self.submit_btn.clicked.connect(self.submit_entry)
+
+    def submit_entry(self):
+        result = add_entry(self.vault_path, self.entry_name, self.web_url, self.username, self.passwd)
+        if result:
+            self.name_entry.clear()
+            self.web_url_entry.clear()
+            self.user_entry.clear()
+            self.password_entry.clear()
+            self.enable_checkbox.setChecked(False)
+            self.submit_btn.hide()
+
+        self.loadlist()
+
+
 
 
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
