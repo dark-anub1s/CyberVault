@@ -5,6 +5,7 @@ import random
 import string
 import hashlib
 import requests
+import zipfile
 import pyperclip
 from pathlib import Path
 from Crypto import Random
@@ -260,7 +261,14 @@ def pwn_checker(password):
 
     if sha_postfix in pwned_dict.keys():
         return True, pwned_dict[sha_postfix]
-        # print(f"Password '{password}' has been compromised {pwned_dict[sha_postfix]} times.")
     else:
         return False, 0
-        # print(f"Password '{password}' is safe to use.")
+
+def backup_account(save_location):
+    backup_location = Path(save_location)
+    save_location = os.path.join(backup_location, 'cybervault_backup.zip')
+    backup = zipfile.ZipFile(save_location, 'w')
+
+    backup.write()
+    backup.close()
+
