@@ -153,3 +153,4 @@ cython_debug/
 *.sublime-project
 *.sublime-workspace
 *.db
+test.py

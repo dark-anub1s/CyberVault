@@ -349,8 +349,6 @@ class PasswordVault(QDialog):
         self.loadlist()
 
 
-
-
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super().initStyleOption(option, index)
@@ -443,6 +441,20 @@ class PasswordChecker(QDialog):
                 pass
 
         self.index_list.clear()
+
+
+class BackupAccount(QDialog):
+    def __init__(self):
+        super(BackupAccount, self).__init__()
+        loadUi("backupaccount.ui", self)
+
+
+class User():
+    def __init__(self, prikey, pubkey, s_key, vault):
+        self.pri_key = prikey
+        self.pub_key = pubkey
+        self.s_key = s_key
+        self.vault = Path(vault)
 
 def exit_handler():
     print("Exiting Now")

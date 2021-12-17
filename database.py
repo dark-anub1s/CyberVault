@@ -11,9 +11,15 @@ def create_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users
-    (username TEXT NOT NULL UNIQUE, public_key TEXT NOT NULL UNIQUE,
+    (id int PRIMARY KEY AUTO_INCREMENT, username TEXT NOT NULL UNIQUE, 
+    public_key TEXT NOT NULL UNIQUE,
     vault_location TEXT NOT NULL UNIQUE, otp_key TEXT UNIQUE)
     """)
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS data
+        (userID int PRIMARY KEY, FOREIGN KEY(userID) REFERENCES users(id)
+        , enc_session_key TEXT, cipher_aes.nonce TEXT, tag TEXT, ciphertext TEXT)
+     """)
 
     conn.commit()
     conn.close()
