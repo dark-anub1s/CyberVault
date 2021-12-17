@@ -5,12 +5,12 @@ import qrcode
 import sqlite3
 from pathlib import Path
 from PyQt5.uic import loadUi
-from functions import generate_keys, pwn_checker
+from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QEventLoop
 from pyotp import random_base32, TOTP
-from database import create_db, create_cybervault, get_user, add_entry
+from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user
 from PIL.ImageQt import ImageQt
 from PyQt5.QtGui import QPixmap, QImage, QFont, QBrush, QColor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
@@ -88,14 +88,23 @@ class NewUser(QDialog):
         self.pri_key, self.pub_key = generate_keys()
         self.save_key()
         self.get_vault_name()
+        self.vault_passwd = vault_password()
 
         if self.checked:
             # Create account in database and make password vault with MFA
-            create_cybervault(username, self.pub_key, self.vault, self.s_key)
-            self.account = True
+            result = create_cybervault(username, self.vault)
+            if result:
+                self.account = True
+                userid = add_user(username, self.pub_key, self.s_key, self.vault)
+                session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
+                add_user_enc_data(userid, session, nonce, tag, ciphertext)
         else:
-            create_cybervault(username, self.pub_key, self.vault)
-            self.account = True
+            result = create_cybervault(username, self.vault)
+            if result:
+                self.account = True
+                userid = add_user(username, self.pub_key, self.s_key, self.vault)
+                session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
+                add_user_enc_data(userid, session, nonce, tag, ciphertext)
 
         if self.account:
             passvault = PasswordVault(self.vault)

@@ -43,13 +43,13 @@ def generate_keys():
 
 # Done
 def rsa_vault_encrypt(public_key, password):
-    home = Path.home()
-    home = os.path.join(home, "Documents")
-    vault_dir = os.path.join(home, "CyberVault")
-    data_file = os.path.join(vault_dir, "data.bin")
+    # home = Path.home()
+    # home = os.path.join(home, "Documents")
+    # vault_dir = os.path.join(home, "CyberVault")
+    # data_file = os.path.join(vault_dir, "data.bin")
 
-    if not os.path.isdir(vault_dir):
-        os.makedirs(vault_dir)
+    # if not os.path.isdir(vault_dir):
+    #     os.makedirs(vault_dir)
 
     data = password.encode('utf-8')
     key = RSA.import_key(public_key)
@@ -63,9 +63,10 @@ def rsa_vault_encrypt(public_key, password):
     cipher_aes = AES.new(session_key, AES.MODE_EAX)
     ciphertext, tag = cipher_aes.encrypt_and_digest(data)
 
-    with open(data_file, 'wb') as f:
-        for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext):
-            f.write(x)
+    return enc_session_key, cipher_aes.nonce, tag, ciphertext
+    # with open(data_file, 'wb') as f:
+    #     for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext):
+    #         f.write(x)
 
 
 # Done

@@ -1,33 +1,32 @@
 import os
 import sqlite3
 from PyQt5.QtWidgets import QMessageBox
-from functions import vault_password, rsa_vault_encrypt
 
 
 # Create the main users database
 def create_db():
     conn = sqlite3.connect('users.db')
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.commit()
     cur = conn.cursor()
-
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users
     (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, 
     public_key TEXT NOT NULL UNIQUE,
     vault_location TEXT NOT NULL UNIQUE, otp_key TEXT UNIQUE)
     """)
+    conn.commit()
 
-    # cur.execute("""CREATE TABLE IF NOT EXISTS data
-    #     (userID int PRIMARY KEY, FOREIGN KEY(userID) REFERENCES users(id)
-    #     , enc_session_key TEXT, cipher_aes.nonce TEXT, tag TEXT, ciphertext TEXT)
-    #  """)
-
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS data
+    (userid INTEGER PRIMARY KEY, session_key BLOB, nonce BLOB, tag BLOB, ciphertext BLOB, FOREIGN KEY(userid) REFERENCES users(id))""")
     conn.commit()
     conn.close()
 
 
 # Function takes a username, public key, and,
 # vault file name, and an otp secret key if one is provided.
-def create_cybervault(username, pub, vault, otp_key=None):
+def create_cybervault(username, vault):
     success = False
 
     if not username:
@@ -47,14 +46,14 @@ def create_cybervault(username, pub, vault, otp_key=None):
         os.remove(vault)
 
     if success:
-        add_user(username, pub, otp_key, vault)
-        password = vault_password()
-        rsa_vault_encrypt(pub, password)
+        return True
 
 
 def add_user(username, pub_key, key, vault_location):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.commit()
 
     if key is not None:
         entities = [username, pub_key, vault_location, key]
@@ -67,6 +66,24 @@ def add_user(username, pub_key, key, vault_location):
         cursor.execute("""
         INSERT INTO users("username", "public_key", "vault_location") VALUES(?, ?, ?)
         """, entities)
+
+    conn.commit()
+    last_id = cursor.lastrowid
+    conn.close()
+
+    return last_id
+
+
+def add_user_enc_data(userid, session_key, nonce, tag, ciphertext):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()  
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.commit()
+
+    entities = [userid, session_key, nonce, tag, ciphertext]
+    cursor.execute("""
+    INSERT INTO data("userid", "session_key", "nonce", "tag", "ciphertext") VALUES(?, ?, ?, ?, ?)
+    """, entities)
 
     conn.commit()
     conn.close()
