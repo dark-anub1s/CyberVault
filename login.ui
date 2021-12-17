@@ -34,7 +34,7 @@
   <property name="styleSheet">
    <string notr="true">background-color: rgb(141, 145, 141);</string>
   </property>
-  <widget class="QLabel" name="login_label">
+  <widget class="QLabel" name="title">
    <property name="geometry">
     <rect>
      <x>10</x>
