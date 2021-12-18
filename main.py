@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 import time
 import qrcode
@@ -116,9 +117,16 @@ class NewUser(QDialog):
             pass
         else:
             file = fname[0]
-            with open(f"{file}.pem", 'wb') as f:
-                f.write(self.pri_key)
-                f.write(b'\n')
+            if os.name == 'posix':
+                with open(f"{file}.pem", 'wb') as f:
+                    f.write(self.pri_key)
+                    f.write(b'\n')
+            elif os.name == 'nt':
+                with open(file, 'wb') as f:
+                    f.write(self.pri_key)
+                    f.write(b'\n')
+            else:
+                pass
 
     def get_vault_name(self):
         vault = QFileDialog.getSaveFileName(self, "Save Vault", str(self.home),
@@ -126,7 +134,12 @@ class NewUser(QDialog):
         if vault == ('', ''):
             pass
         else:
-            self.vault = f"{vault[0]}.cvdb"
+            if os.name == 'posix':
+                self.vault = f"{vault[0]}.cvdb"
+            elif os.name == 'nt':
+                self.vault = vault[0]
+            else:
+                pass
 
     def open_vault(self):
         passvault = PasswordVault(self.vault, self.uname, self.pri_key)
