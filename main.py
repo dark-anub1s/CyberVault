@@ -38,14 +38,14 @@ class UI(QMainWindow):
         widget.addWidget(newaccountwindow)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
-    def open_vault(self):
-        openvaultwindow = OpenCyberVault()
-        widget.addWidget(openvaultwindow)
-        widget.setCurrentIndex(widget.currentIndex()+1)
-
     def login(self):
         loginwindow = Login()
         widget.addWidget(loginwindow)
+        widget.setCurrentIndex(widget.currentIndex()+1)
+
+    def open_vault(self):
+        openvaultwindow = OpenCyberVault()
+        widget.addWidget(openvaultwindow)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
 
@@ -70,11 +70,11 @@ class NewUser(QDialog):
         self.account = False
 
     def enable_mfa(self):
-        username = self.username.text()
+        self.uname = self.username.text()
         self.checked = self.enableMFA.isChecked()
         self.s_key = random_base32()
         totp = TOTP(self.s_key)
-        auth = totp.provisioning_uri(name=username, issuer_name='CyberVault')
+        auth = totp.provisioning_uri(name=self.uname, issuer_name='CyberVault')
 
         if self.qrcodewindow is None:
             self.qrcodewindow = QRCodeGenerator(self.s_key, auth)
@@ -84,7 +84,7 @@ class NewUser(QDialog):
 
 
     def create_account(self):
-        username = self.username.text()
+        self.uname = self.username.text()
         self.pri_key, self.pub_key = generate_keys()
         self.save_key()
         self.get_vault_name()
@@ -92,24 +92,22 @@ class NewUser(QDialog):
 
         if self.checked:
             # Create account in database and make password vault with MFA
-            result = create_cybervault(username, self.vault)
+            result = create_cybervault(self.uname, self.vault)
             if result:
                 self.account = True
-                userid = add_user(username, self.pub_key, self.s_key, self.vault)
+                userid = add_user(self.uname, self.pub_key, self.s_key, self.vault)
                 session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
                 add_user_enc_data(userid, session, nonce, tag, ciphertext)
         else:
-            result = create_cybervault(username, self.vault)
+            result = create_cybervault(self.uname, self.vault)
             if result:
                 self.account = True
-                userid = add_user(username, self.pub_key, self.s_key, self.vault)
+                userid = add_user(self.uname, self.pub_key, self.s_key, self.vault)
                 session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
                 add_user_enc_data(userid, session, nonce, tag, ciphertext)
 
         if self.account:
-            passvault = PasswordVault(self.vault)
-            widget.addWidget(passvault)
-            widget.setCurrentIndex(widget.currentIndex()+1)
+            self.open_vault()
 
     def save_key(self):
         fname = QFileDialog.getSaveFileName(self, "Save Key", str(self.home),
@@ -130,6 +128,11 @@ class NewUser(QDialog):
         else:
             self.vault = vault[0]
 
+    def open_vault(self):
+        passvault = PasswordVault(self.vault, self.uname, self.pri_key)
+        widget.addWidget(passvault)
+        widget.setCurrentIndex(widget.currentIndex()+1)
+
 
 class Login(QDialog):
     def __init__(self):
@@ -145,19 +148,17 @@ class Login(QDialog):
         self.load_rsa_button.clicked.connect(self.loadkey)
 
     def loadkey(self):
-        self.pri_key = None
-
         fname = QFileDialog.getOpenFileName(self, 'Load RSA Key', str(self.home), 'Key File (*.pem)')
         self.rsa_key_entry.setText(fname[0])
 
 
     def login(self):
-        username = self.user_entry.text()
-        pri_key = self.rsa_key_entry.text()
+        self.username = self.user_entry.text()
+        self.pri_key = self.rsa_key_entry.text()
         self.checked = self.mfa_checkBox.isChecked()
 
         if username:
-            user, pub_key, self.vault, self.otp_s_key = get_user(username)
+            user, pub_key, self.vault, self.otp_s_key, userid = get_user(username)
             if user:
                 # If User has MFA Enabled
                 if self.checked and self.otp_s_key:
@@ -172,7 +173,7 @@ class Login(QDialog):
                 # Checks if the box is checked but no opt key was found in database
                 elif self.checked and not self.otp_s_key:
                     self.mfa_checkBox.setChecked(False)
-                    # self.open_vault()
+                    self.open_vault()
                 elif not self.checked and not self.otp_s_key:
                     self.open_vault()
                 else:
@@ -182,8 +183,6 @@ class Login(QDialog):
                 pass
         else:
             pass
-
-
 
     def verify_login(self):
         code = self.auth_code_entry.text()
@@ -195,9 +194,10 @@ class Login(QDialog):
             self.open_vault()
 
     def open_vault(self):
-        passvault = PasswordVault(self.vault)
+        passvault = PasswordVault(self.vault, self.username, self.pri_key)
         widget.addWidget(passvault)
         widget.setCurrentIndex(widget.currentIndex()+1)
+
 
 
 class OpenCyberVault(QDialog):
@@ -252,10 +252,13 @@ class QRCodeGenerator(QWidget):
 
 
 class PasswordVault(QDialog):
-    def __init__(self, vault):
+    def __init__(self, vault, username, prikey):
         super(PasswordVault, self).__init__()
         loadUi("passwordvault.ui", self)
-
+        self.vault_path = Path(vault)
+        self.username = username
+        self.prikey = prikey
+        self.getuser()
         # Setup window entry boxes and buttons to be disabled at start
         self.name_entry.setEnabled(False)
         self.web_url_entry.setEnabled(False)
@@ -266,8 +269,7 @@ class PasswordVault(QDialog):
         self.submit_btn.hide()
         self.update_entry_btn.hide()
         self.delete_entry_btn.hide()
-
-        self.vault_path = Path(vault)
+        
         self.loadlist()
 
         self.enable_checkbox.stateChanged.connect(self.checked)
@@ -357,6 +359,9 @@ class PasswordVault(QDialog):
 
         self.loadlist()
 
+    def getuser(self):
+        user, pubkey, vault, s_key, userid = get_user(self.username)
+        self.vaultuser = User(self.prikey, pubkey, s_key, vault, userid)
 
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
@@ -459,11 +464,18 @@ class BackupAccount(QDialog):
 
 
 class User():
-    def __init__(self, prikey, pubkey, s_key, vault):
+    def __init__(self, prikey, pubkey, s_key, vault, userid):
+        self.s_key = s_key
+        self.userid = userid
         self.pri_key = prikey
         self.pub_key = pubkey
-        self.s_key = s_key
         self.vault = Path(vault)
+
+    def update_rsa(self):
+        pass
+
+
+
 
 def exit_handler():
     print("Exiting Now")

@@ -103,14 +103,15 @@ def get_user(username):
     rows = cursor.fetchall()
 
     for row in rows:
-        uname = row[0]
-        pkey = row[1]
+        uid = row[0]
+        uname = row[1]
+        pkey = row[2]
         pkey = pkey.decode('utf-8')
-        vault_location = row[2]
-        otp_key = row[3]
+        vault_location = row[3]
+        otp_key = row[4]
 
     if uname:
-        return uname, pkey, vault_location, otp_key
+        return uname, pkey, vault_location, otp_key, uid
     else:
         return
 
