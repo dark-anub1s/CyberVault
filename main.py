@@ -169,7 +169,7 @@ class Login(QDialog):
         self.checked = self.mfa_checkBox.isChecked()
 
         if self.username:
-            user, pub_key, self.vault, self.otp_s_key, userid = get_user(username)
+            user, pub_key, self.vault, self.otp_s_key, userid = get_user(self.username)
             if user:
                 # If User has MFA Enabled
                 if self.checked and self.otp_s_key:
