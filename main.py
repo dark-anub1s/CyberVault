@@ -118,15 +118,13 @@ class NewUser(QDialog):
         else:
             file = fname[0]
             if os.name == 'posix':
-                with open(f"{file}.pem", 'wb') as f:
-                    f.write(self.pri_key)
-                    f.write(b'\n')
-            elif os.name == 'nt':
-                with open(file, 'wb') as f:
-                    f.write(self.pri_key)
-                    f.write(b'\n')
-            else:
-                pass
+                file = f"{file}.pem"
+            
+
+            with open(file, 'wb') as f:
+                f.write(self.pri_key)
+                f.write(b'\n')
+
 
     def get_vault_name(self):
         vault = QFileDialog.getSaveFileName(self, "Save Vault", str(self.home),
@@ -134,12 +132,10 @@ class NewUser(QDialog):
         if vault == ('', ''):
             pass
         else:
+            self.vault = vault[0]
+
             if os.name == 'posix':
                 self.vault = f"{vault[0]}.cvdb"
-            elif os.name == 'nt':
-                self.vault = vault[0]
-            else:
-                pass
 
     def open_vault(self):
         passvault = PasswordVault(self.vault, self.uname, self.pri_key)
@@ -152,6 +148,7 @@ class Login(QDialog):
         super(Login, self).__init__()
         loadUi("login.ui", self)
         self.home = Path.home()
+        self.home = os.path.join(self.home, "Documents")
 
         self.auth_code_lable.hide()
         self.auth_code_entry.hide()
