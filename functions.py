@@ -19,10 +19,10 @@ if os.name == 'nt':
 
 
 # Done
-def clipboard_wipe(enabled=False, sleep_time=5):
+def clipboard_wipe(enabled=False, delay=5):
     while enabled:
         pyperclip.copy("")
-        time.sleep(sleep_time)
+        time.sleep(delay)
 
 
 # Done
@@ -264,6 +264,7 @@ def pwn_checker(password):
         return True, pwned_dict[sha_postfix]
     else:
         return False, 0
+
 
 def backup_account(save_location):
     backup_location = Path(save_location)
