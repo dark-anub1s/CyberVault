@@ -57,6 +57,7 @@ class NewUser(QDialog):
         super(NewUser, self).__init__()
         loadUi("newaccount.ui", self)
         self.home = Path.home()
+        self.home = os.path.join(self.home, "Documents")
 
         # Setting up on screen options
         self.checked = None
@@ -167,7 +168,7 @@ class Login(QDialog):
         self.pri_key = self.rsa_key_entry.text()
         self.checked = self.mfa_checkBox.isChecked()
 
-        if username:
+        if self.username:
             user, pub_key, self.vault, self.otp_s_key, userid = get_user(username)
             if user:
                 # If User has MFA Enabled
