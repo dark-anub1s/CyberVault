@@ -6,12 +6,12 @@ import qrcode
 import sqlite3
 from pathlib import Path
 from PyQt5.uic import loadUi
-from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt
+from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_vault_encrypt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QEventLoop
 from pyotp import random_base32, TOTP
-from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user
+from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, get_user_enc_data
 from PIL.ImageQt import ImageQt
 from PyQt5.QtGui import QPixmap, QImage, QFont, QBrush, QColor
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
@@ -28,11 +28,6 @@ class UI(QMainWindow):
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
-
-        # self.exit_app.triggered.connect(exit_handler)
-
-    def app_open(self):
-        pass
 
     def create_account(self):
         newaccountwindow = NewUser()
@@ -270,6 +265,7 @@ class PasswordVault(QDialog):
         self.username = username
         self.prikey = prikey
         self.getuser()
+
         # Setup window entry boxes and buttons to be disabled at start
         self.name_entry.setEnabled(False)
         self.web_url_entry.setEnabled(False)
@@ -287,7 +283,13 @@ class PasswordVault(QDialog):
         self.account_list.clicked.connect(self.loadtable)
         self.add_entry_btn.clicked.connect(self.add_entry)
 
+    def getuser(self):
+        user, pubkey, vault, s_key, userid = get_user(self.username)
+        self.vaultuser = User(self.prikey, pubkey, s_key, vault, userid)
+
+
     def loadlist(self):
+        self.vaultuser.unlock_vault()
         self.account_list.clear()
         self.conn = sqlite3.connect(self.vault_path)
         self.cur = self.conn.cursor()
@@ -369,10 +371,6 @@ class PasswordVault(QDialog):
             self.submit_btn.hide()
 
         self.loadlist()
-
-    def getuser(self):
-        user, pubkey, vault, s_key, userid = get_user(self.username)
-        self.vaultuser = User(self.prikey, pubkey, s_key, vault, userid)
 
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
@@ -484,6 +482,14 @@ class User():
 
     def update_rsa(self):
         pass
+
+    def lock_vault(self):
+        session, nonce, tag, passwd = get_user_enc_data(self.userid)
+        rsa_vault_encrypt(self.pub_key, passwd, self.vault)
+
+
+    def unlock_vault(self):
+        rsa_vault_decrypt(self.pri_key, self.userid, self.vault)
 
 
 

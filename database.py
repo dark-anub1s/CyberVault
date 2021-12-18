@@ -89,6 +89,25 @@ def add_user_enc_data(userid, session_key, nonce, tag, ciphertext):
     conn.close()
 
 
+def get_user_enc_data(userid):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()  
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.commit()
+
+    cursor.execute("SELECT * FROM users WHERE userid=?", (userid,))
+
+    rows = cursor.fetchall()
+
+    for row in rows:
+        session = row[1]
+        nonce = row[2]
+        tag = pkey.decode('utf-8')
+        ciphertext = row[3]
+
+    return session, nonce, tag, ciphertext
+
+
 def get_user(username):
     uname = None
     pkey = None

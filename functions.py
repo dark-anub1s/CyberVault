@@ -42,7 +42,7 @@ def generate_keys():
 
 
 # Done
-def rsa_vault_encrypt(public_key, password):
+def rsa_vault_encrypt(public_key, password, vault=None):
     # home = Path.home()
     # home = os.path.join(home, "Documents")
     # vault_dir = os.path.join(home, "CyberVault")
@@ -64,24 +64,27 @@ def rsa_vault_encrypt(public_key, password):
     ciphertext, tag = cipher_aes.encrypt_and_digest(data)
 
     return enc_session_key, cipher_aes.nonce, tag, ciphertext
+    if vault:
+        aes_vault_encrypt(vault, password)
     # with open(data_file, 'wb') as f:
     #     for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext):
     #         f.write(x)
 
 
 # Done
-def rsa_vault_decrypt(private_key):
-    home = Path.home()
-    home = os.path.join(home, "Documents")
-    vault_dir = os.path.join(home, "CyberVault")
-    data_file = os.path.join(vault_dir, "data.bin")
+def rsa_vault_decrypt(private_key, userid, vault):
+    # home = Path.home()
+    # home = os.path.join(home, "Documents")
+    # vault_dir = os.path.join(home, "CyberVault")
+    # data_file = os.path.join(vault_dir, "data.bin")
+    esk, nonce, tag, ctext = get_user_enc_data(userid)
 
     with open(private_key, 'r') as pri_key:
         key = RSA.import_key(pri_key.read())
-        with open(data_file, 'rb') as f:
-            # esk = enc_session_key, ctext = ciphertext
-            esk, nonce, tag, ctext = [f.read(x) for x in
-                                            (key.size_in_bytes(), 16, 16, -1)]
+        # with open(data_file, 'rb') as f:
+        #     # esk = enc_session_key, ctext = ciphertext
+        #     esk, nonce, tag, ctext = [f.read(x) for x in
+        #                                     (key.size_in_bytes(), 16, 16, -1)]
 
         # Decrypt session key with private key.
         cipher_rsa = PKCS1_OAEP.new(key)
@@ -89,7 +92,8 @@ def rsa_vault_decrypt(private_key):
 
         cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
         data = cipher_aes.decrypt_and_verify(ctext, tag)
-        return data.decode("utf-8")
+        aes_vault_decrypt(vault, data)
+        # return data.decode("utf-8")
 
 
 # Done
@@ -110,6 +114,8 @@ def aes_vault_encrypt(filename, key):
     with open(filename, 'w') as data:
         data.write(iv + ciphertext)
     data.close()
+
+    return True
 
 
 # Done
