@@ -116,7 +116,7 @@ class NewUser(QDialog):
             pass
         else:
             file = fname[0]
-            with open(file, 'wb') as f:
+            with open(f"{file}.pem", 'wb') as f:
                 f.write(self.pri_key)
                 f.write(b'\n')
 
@@ -126,7 +126,7 @@ class NewUser(QDialog):
         if vault == ('', ''):
             pass
         else:
-            self.vault = vault[0]
+            self.vault = f"{vault[0]}.cvdb"
 
     def open_vault(self):
         passvault = PasswordVault(self.vault, self.uname, self.pri_key)
