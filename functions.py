@@ -80,20 +80,20 @@ def rsa_vault_decrypt(private_key, userid, vault):
     # data_file = os.path.join(vault_dir, "data.bin")
     esk, nonce, tag, ctext = get_user_enc_data(userid)
 
-    with open(private_key, 'r') as pri_key:
-        key = RSA.import_key(pri_key.read())
+    # with open(private_key, 'r') as pri_key:
+    key = RSA.import_key(private_key) #pri_key.read())
         # with open(data_file, 'rb') as f:
         #     # esk = enc_session_key, ctext = ciphertext
         #     esk, nonce, tag, ctext = [f.read(x) for x in
         #                                     (key.size_in_bytes(), 16, 16, -1)]
 
-        # Decrypt session key with private key.
-        cipher_rsa = PKCS1_OAEP.new(key)
-        session_key = cipher_rsa.decrypt(esk)
+    # Decrypt session key with private key.
+    cipher_rsa = PKCS1_OAEP.new(key)
+    session_key = cipher_rsa.decrypt(esk)
 
-        cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
-        data = cipher_aes.decrypt_and_verify(ctext, tag)
-        aes_vault_decrypt(vault, data)
+    cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
+    data = cipher_aes.decrypt_and_verify(ctext, tag)
+    aes_vault_decrypt(vault, data)
         # return data.decode("utf-8")
 
 
@@ -121,7 +121,6 @@ def aes_vault_encrypt(filename, key):
 
 # Done
 def aes_vault_decrypt(filename, key):
-    key = key.encode("utf-8")
     key = pad(key, AES.block_size)
 
     with open(filename, 'r') as vault_data:
