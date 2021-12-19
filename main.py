@@ -6,7 +6,7 @@ import qrcode
 import sqlite3
 from pathlib import Path
 from PyQt5.uic import loadUi
-from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_vault_encrypt
+from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_vault_encrypt, rsa_vault_decrypt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QEventLoop
@@ -24,7 +24,6 @@ class UI(QMainWindow):
         loadUi("cybervault.ui", self)
         self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint, False)
         create_db()
-        self.app_open()
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)

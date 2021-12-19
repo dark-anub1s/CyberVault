@@ -95,15 +95,15 @@ def get_user_enc_data(userid):
     conn.execute("PRAGMA foreign_keys = ON")
     conn.commit()
 
-    cursor.execute("SELECT * FROM users WHERE userid=?", (userid,))
+    cursor.execute("SELECT * FROM data WHERE userid=?", (userid,))
 
     rows = cursor.fetchall()
 
     for row in rows:
         session = row[1]
         nonce = row[2]
-        tag = pkey.decode('utf-8')
-        ciphertext = row[3]
+        tag = row[3]
+        ciphertext = row[4]
 
     return session, nonce, tag, ciphertext
 

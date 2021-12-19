@@ -10,6 +10,7 @@ import pyperclip
 from pathlib import Path
 from Crypto import Random
 from Crypto.PublicKey import RSA
+from database import get_user_enc_data
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
