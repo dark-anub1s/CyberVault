@@ -93,6 +93,7 @@ class NewUser(QDialog):
                 userid = add_user(self.uname, self.pub_key, self.s_key, self.vault)
                 session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
                 add_user_enc_data(userid, session, nonce, tag, ciphertext)
+                self.vault_state = aes_vault_encrypt(self.vault, self.vault_passwd)
         else:
             result = create_cybervault(self.uname, self.vault)
             if result:
@@ -100,6 +101,7 @@ class NewUser(QDialog):
                 userid = add_user(self.uname, self.pub_key, self.s_key, self.vault)
                 session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
                 add_user_enc_data(userid, session, nonce, tag, ciphertext)
+                self.vault_state = aes_vault_encrypt(self.vault, self.vault_passwd)
 
         if self.account:
             self.open_vault()
@@ -132,7 +134,7 @@ class NewUser(QDialog):
                 self.vault = f"{vault[0]}.cvdb"
 
     def open_vault(self):
-        passvault = PasswordVault(self.vault, self.uname, self.pri_key, new=True)
+        passvault = PasswordVault(self.vault, self.uname, self.pri_key)
         widget.addWidget(passvault)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
@@ -255,14 +257,13 @@ class QRCodeGenerator(QWidget):
 
 
 class PasswordVault(QDialog):
-    def __init__(self, vault, username, prikey, new=False):
+    def __init__(self, vault, username, prikey):
         super(PasswordVault, self).__init__()
         loadUi("passwordvault.ui", self)
         self.vault_path = Path(vault)
         self.username = username
         self.prikey = prikey
         self.getuser()
-        self.new = new
 
         # Setup window entry boxes and buttons to be disabled at start
         self.name_entry.setEnabled(False)
@@ -287,9 +288,8 @@ class PasswordVault(QDialog):
 
 
     def loadlist(self):
-        if self.new:
+        if not self.vaultuser.unlocked:
             self.vaultuser.unlock_vault()
-            self.new = False
 
         self.account_list.clear()
         self.conn = sqlite3.connect(self.vault_path)
@@ -301,12 +301,11 @@ class PasswordVault(QDialog):
         for i in range(len(names)):
             entry = QtWidgets.QListWidgetItem(names[i][0])
             self.account_list.addItem(entry)
-        self.vaultuser.lock_vault()
+        self.vaultuser.show_popup()
 
     def loadtable(self):
-        if self.new:
+        if not self.vaultuser.unlocked:
             self.vaultuser.unlock_vault()
-            self.new = False
 
         self.account_table.setRowCount(15)
         self.account_table.setColumnCount(4)
@@ -331,7 +330,9 @@ class PasswordVault(QDialog):
             self.account_table.setItem(tablerow, 3, QtWidgets.QTableWidgetItem(row[4]))
 
             tablerow += 1
-        self.vaultuser.lock_vault()
+
+        if self.vaultuser.unlocked:
+            self.vaultuser.show_popup()
 
     def checked(self):
         if self.enable_checkbox.isChecked():
@@ -368,7 +369,8 @@ class PasswordVault(QDialog):
             self.submit_btn.clicked.connect(self.submit_entry)
 
     def submit_entry(self):
-        self.vaultuser.unlock_vault()
+        if not self.vaultuser.unlocked:
+            self.vaultuser.unlock_vault()
         result = add_entry(self.vault_path, self.entry_name, self.web_url, self.username, self.passwd)
         if result:
             self.name_entry.clear()
@@ -377,9 +379,9 @@ class PasswordVault(QDialog):
             self.password_entry.clear()
             self.enable_checkbox.setChecked(False)
             self.submit_btn.hide()
-            self.vaultuser.lock_vault()
 
-        self.loadlist()
+            self.loadlist()
+        self.vaultuser.show_popup()
 
 
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
@@ -488,21 +490,20 @@ class User():
         self.userid = userid
         self.pri_key = prikey
         self.pub_key = pubkey
+        self.locked = True
+        self.unlocked = False
         self.vault = Path(vault)
 
     def update_rsa(self):
         pass
 
     def lock_vault(self):
-        # session, nonce, tag, passwd = get_user_enc_data(self.userid)
-        # aes_vault_encrypt(self.vault, passwd)
-        self.show_popup()
-        
-
+        session, nonce, tag, passwd = get_user_enc_data(self.userid)
+        self.locked = aes_vault_encrypt(self.vault, passwd)
 
     def unlock_vault(self):
         passwd = rsa_vault_decrypt(self.pri_key, self.userid)
-        aes_vault_decrypt(self.vault, passwd)
+        self.unlocked = aes_vault_decrypt(self.vault, passwd)
 
     def show_popup(self):
         msgBox = QMessageBox()
@@ -510,18 +511,25 @@ class User():
         msgBox.setWindowTitle("Lock Vault")
         msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msgBox.setDefaultButton(QMessageBox.Yes)
-        msgBox.setInformativeText("Do you want to lock your vault?")
+        msgBox.setInformativeText("Do you want to Lock your vault?")
         msgBox.buttonClicked.connect(self.popup_button)
 
-        result = msgBox.exec_()
+        msgBox.exec_()
 
-        if result == QMessageBox.Yes:
-            print("Clicked Yes")
+    def popup_button(self):
+        if QMessageBox.Yes:
+            if self.locked:
+                pass
+            elif self.unlocked:
+                self.unlocked = False
+                self.vault_lock()
+            else:
+                pass
+
+        elif QMessageBox.No:
+            pass
         else:
-            print("Clicked No")
-
-    def popup_button(self, i):
-        print(i.text())
+            pass
 
 
 def exit_handler():

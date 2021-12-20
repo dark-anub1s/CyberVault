@@ -100,21 +100,25 @@ def aes_vault_encrypt(filename, key):
     # key = key.encode("utf-8")
     key = pad(key, AES.block_size)
 
-    # Open and encrypt vault data
-    with open(filename, 'rb') as vault:
-        data = vault.read()
-        cipher = AES.new(key, AES.MODE_CFB)
-        ciphertext = cipher.encrypt(pad(data, AES.block_size))
-        iv = base64.b64encode(cipher.iv).decode("UTF-8")
-        ciphertext = base64.b64encode(ciphertext).decode("UTF-8")
-        vault.close()
+    try:
+        # Open and encrypt vault data
+        with open(filename, 'rb') as vault:
+            data = vault.read()
+            cipher = AES.new(key, AES.MODE_CFB)
+            ciphertext = cipher.encrypt(pad(data, AES.block_size))
+            iv = base64.b64encode(cipher.iv).decode("UTF-8")
+            ciphertext = base64.b64encode(ciphertext).decode("UTF-8")
+            vault.close()
 
-    # Write encrypted vault data back to same file.
-    with open(filename, 'w') as data:
-        data.write(iv + ciphertext)
-    data.close()
+        # Write encrypted vault data back to same file.
+        with open(filename, 'w') as data:
+            data.write(iv + ciphertext)
+        data.close()
+        return True
 
-    return True
+    except (ValueError, KeyError):
+        return False
+
 
 
 # Done
@@ -137,9 +141,11 @@ def aes_vault_decrypt(filename, key):
             decrypted = unpad(decrypted, AES.block_size)
             with open(filename, 'wb') as vault:
                 vault.write(decrypted)
+            return True
 
         except (ValueError, KeyError):
-            pass
+            return False
+
 
 
 # Create registry key to store password used to encrypt vault_users.cdbv file.
