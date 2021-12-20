@@ -65,15 +65,13 @@ def rsa_vault_encrypt(public_key, password, vault=None):
     ciphertext, tag = cipher_aes.encrypt_and_digest(data)
 
     return enc_session_key, cipher_aes.nonce, tag, ciphertext
-    if vault:
-        aes_vault_encrypt(vault, password)
     # with open(data_file, 'wb') as f:
     #     for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext):
     #         f.write(x)
 
 
 # Done
-def rsa_vault_decrypt(private_key, userid, vault):
+def rsa_vault_decrypt(private_key, userid):
     # home = Path.home()
     # home = os.path.join(home, "Documents")
     # vault_dir = os.path.join(home, "CyberVault")
@@ -93,23 +91,23 @@ def rsa_vault_decrypt(private_key, userid, vault):
 
     cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
     data = cipher_aes.decrypt_and_verify(ctext, tag)
-    aes_vault_decrypt(vault, data)
-        # return data.decode("utf-8")
+
+    return data.decode("utf-8")
 
 
 # Done
 def aes_vault_encrypt(filename, key):
-    key = key.encode("utf-8")
+    # key = key.encode("utf-8")
     key = pad(key, AES.block_size)
 
     # Open and encrypt vault data
     with open(filename, 'rb') as vault:
         data = vault.read()
         cipher = AES.new(key, AES.MODE_CFB)
-        ciphertext = cipher.encrypt(data, AES.block_size)
-        iv = base64.b64encode(cipher.iv).decode("utf-8")
-        ciphertext = base64.b64encode(ciphertext).decode("utf-8")
-    vault.close()
+        ciphertext = cipher.encrypt(pad(data, AES.block_size))
+        iv = base64.b64encode(cipher.iv).decode("UTF-8")
+        ciphertext = base64.b64encode(ciphertext).decode("UTF-8")
+        vault.close()
 
     # Write encrypted vault data back to same file.
     with open(filename, 'w') as data:
@@ -121,6 +119,7 @@ def aes_vault_encrypt(filename, key):
 
 # Done
 def aes_vault_decrypt(filename, key):
+    key = key.encode("UTF-8")
     key = pad(key, AES.block_size)
 
     with open(filename, 'r') as vault_data:
@@ -138,6 +137,7 @@ def aes_vault_decrypt(filename, key):
             decrypted = unpad(decrypted, AES.block_size)
             with open(filename, 'wb') as vault:
                 vault.write(decrypted)
+
         except (ValueError, KeyError):
             pass
 

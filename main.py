@@ -6,7 +6,7 @@ import qrcode
 import sqlite3
 from pathlib import Path
 from PyQt5.uic import loadUi
-from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_vault_encrypt, rsa_vault_decrypt
+from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_vault_encrypt, rsa_vault_decrypt, aes_vault_decrypt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QEventLoop
@@ -370,6 +370,7 @@ class PasswordVault(QDialog):
             self.submit_btn.clicked.connect(self.submit_entry)
 
     def submit_entry(self):
+        self.vaultuser.unlock_vault()
         result = add_entry(self.vault_path, self.entry_name, self.web_url, self.username, self.passwd)
         if result:
             self.name_entry.clear()
@@ -378,6 +379,7 @@ class PasswordVault(QDialog):
             self.password_entry.clear()
             self.enable_checkbox.setChecked(False)
             self.submit_btn.hide()
+            self.vaultuser.lock_vault()
 
         self.loadlist()
 
@@ -493,12 +495,14 @@ class User():
         pass
 
     def lock_vault(self):
-        session, nonce, tag, passwd = get_user_enc_data(self.userid)
-        # rsa_vault_encrypt(self.pub_key, passwd, self.vault)
+        # session, nonce, tag, passwd = get_user_enc_data(self.userid)
+        # aes_vault_encrypt(self.vault, passwd)
+        pass
 
 
     def unlock_vault(self):
-        rsa_vault_decrypt(self.pri_key, self.userid, self.vault)
+        passwd = rsa_vault_decrypt(self.pri_key, self.userid)
+        aes_vault_decrypt(self.vault, passwd)
 
 
 
