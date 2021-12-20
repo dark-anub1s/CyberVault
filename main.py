@@ -14,7 +14,7 @@ from pyotp import random_base32, TOTP
 from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, get_user_enc_data
 from PIL.ImageQt import ImageQt
 from PyQt5.QtGui import QPixmap, QImage, QFont, QBrush, QColor
-from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget
+from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
 
 
 # Done
@@ -22,7 +22,6 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         loadUi("cybervault.ui", self)
-        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint, False)
         create_db()
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
@@ -204,7 +203,6 @@ class Login(QDialog):
         widget.setCurrentIndex(widget.currentIndex()+1)
 
 
-
 class OpenCyberVault(QDialog):
     def __init__(self):
         super(OpenCyberVault, self).__init__()
@@ -383,6 +381,7 @@ class PasswordVault(QDialog):
 
         self.loadlist()
 
+
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super().initStyleOption(option, index)
@@ -497,14 +496,32 @@ class User():
     def lock_vault(self):
         # session, nonce, tag, passwd = get_user_enc_data(self.userid)
         # aes_vault_encrypt(self.vault, passwd)
-        pass
+        self.show_popup()
+        
 
 
     def unlock_vault(self):
         passwd = rsa_vault_decrypt(self.pri_key, self.userid)
         aes_vault_decrypt(self.vault, passwd)
 
+    def show_popup(self):
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Information)
+        msgBox.setWindowTitle("Lock Vault")
+        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msgBox.setDefaultButton(QMessageBox.Yes)
+        msgBox.setInformativeText("Do you want to lock your vault?")
+        msgBox.buttonClicked.connect(self.popup_button)
 
+        result = msgBox.exec_()
+
+        if result == QMessageBox.Yes:
+            print("Clicked Yes")
+        else:
+            print("Clicked No")
+
+    def popup_button(self, i):
+        print(i.text())
 
 
 def exit_handler():
