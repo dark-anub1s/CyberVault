@@ -133,7 +133,7 @@ class NewUser(QDialog):
                 self.vault = f"{vault[0]}.cvdb"
 
     def open_vault(self):
-        passvault = PasswordVault(self.vault, self.uname, self.pri_key)
+        passvault = PasswordVault(self.vault, self.uname, self.pri_key, new=True)
         widget.addWidget(passvault)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
@@ -257,13 +257,14 @@ class QRCodeGenerator(QWidget):
 
 
 class PasswordVault(QDialog):
-    def __init__(self, vault, username, prikey):
+    def __init__(self, vault, username, prikey, new=False):
         super(PasswordVault, self).__init__()
         loadUi("passwordvault.ui", self)
         self.vault_path = Path(vault)
         self.username = username
         self.prikey = prikey
         self.getuser()
+        self.new = new
 
         # Setup window entry boxes and buttons to be disabled at start
         self.name_entry.setEnabled(False)
@@ -288,7 +289,10 @@ class PasswordVault(QDialog):
 
 
     def loadlist(self):
-        self.vaultuser.unlock_vault()
+        if self.new:
+            self.vaultuser.unlock_vault()
+            self.new = False
+
         self.account_list.clear()
         self.conn = sqlite3.connect(self.vault_path)
         self.cur = self.conn.cursor()
@@ -299,8 +303,13 @@ class PasswordVault(QDialog):
         for i in range(len(names)):
             entry = QtWidgets.QListWidgetItem(names[i][0])
             self.account_list.addItem(entry)
+        self.vaultuser.lock_vault()
 
     def loadtable(self):
+        if self.new:
+            self.vaultuser.unlock_vault()
+            self.new = False
+
         self.account_table.setRowCount(15)
         self.account_table.setColumnCount(4)
         self.account_table.setColumnWidth(0, 163)
@@ -324,6 +333,7 @@ class PasswordVault(QDialog):
             self.account_table.setItem(tablerow, 3, QtWidgets.QTableWidgetItem(row[4]))
 
             tablerow += 1
+        self.vaultuser.lock_vault()
 
     def checked(self):
         if self.enable_checkbox.isChecked():
@@ -484,7 +494,7 @@ class User():
 
     def lock_vault(self):
         session, nonce, tag, passwd = get_user_enc_data(self.userid)
-        rsa_vault_encrypt(self.pub_key, passwd, self.vault)
+        # rsa_vault_encrypt(self.pub_key, passwd, self.vault)
 
 
     def unlock_vault(self):

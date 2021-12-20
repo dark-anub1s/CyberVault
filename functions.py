@@ -52,7 +52,7 @@ def rsa_vault_encrypt(public_key, password, vault=None):
     # if not os.path.isdir(vault_dir):
     #     os.makedirs(vault_dir)
 
-    data = password.encode('utf-8')
+    data = password # password.encode('utf-8')
     key = RSA.import_key(public_key)
     session_key = get_random_bytes(32)
 
@@ -216,6 +216,7 @@ def vault_password():
     for _ in range(1):
         # Human Readable password
         password = "".join(random.choices(pass_list, k=25))
+        password = password.encode("utf-8")
     return password
 
 
