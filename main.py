@@ -381,7 +381,6 @@ class PasswordVault(QDialog):
             self.submit_btn.hide()
 
             self.loadlist()
-        self.vaultuser.show_popup()
 
 
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
