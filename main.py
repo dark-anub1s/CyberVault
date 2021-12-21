@@ -275,12 +275,31 @@ class PasswordVault(QDialog):
         self.submit_btn.hide()
         self.update_entry_btn.hide()
         self.delete_entry_btn.hide()
-        
-        self.loadlist()
-
+        self.lock_vault_btn.setEnabled(False)
+        self.lock_vault_btn.hide()
         self.enable_checkbox.stateChanged.connect(self.checked)
         self.account_list.clicked.connect(self.loadtable)
         self.add_entry_btn.clicked.connect(self.add_entry)
+
+        self.unlock_vault_btn.clicked.connect(self.vault_unlock)
+        self.lock_vault_btn.clicked.connect(self.vault_lock)
+
+    def vault_unlock(self):
+        result = self.vaultuser.unlock_vault()
+        self.lock_vault_btn.setEnabled(True)
+        self.lock_vault_btn.show()
+        self.unlock_vault_btn.setEnabled(False)
+        self.unlock_vault_btn.hide()
+        
+        if result:
+            self.loadlist()
+
+    def vault_lock(self):
+        self.vaultuser.lock_vault()
+        self.lock_vault_btn.setEnabled(False)
+        self.lock_vault_btn.hide()
+        self.unlock_vault_btn.setEnabled(True)
+        self.unlock_vault_btn.show()
 
     def getuser(self):
         user, pubkey, vault, s_key, userid = get_user(self.username)
@@ -288,9 +307,6 @@ class PasswordVault(QDialog):
 
 
     def loadlist(self):
-        if not self.vaultuser.unlocked:
-            self.vaultuser.unlock_vault()
-
         self.account_list.clear()
         self.conn = sqlite3.connect(self.vault_path)
         self.cur = self.conn.cursor()
@@ -301,12 +317,8 @@ class PasswordVault(QDialog):
         for i in range(len(names)):
             entry = QtWidgets.QListWidgetItem(names[i][0])
             self.account_list.addItem(entry)
-        self.vaultuser.show_popup()
-
+        
     def loadtable(self):
-        if not self.vaultuser.unlocked:
-            self.vaultuser.unlock_vault()
-
         self.account_table.setRowCount(15)
         self.account_table.setColumnCount(4)
         self.account_table.setColumnWidth(0, 163)
@@ -330,9 +342,6 @@ class PasswordVault(QDialog):
             self.account_table.setItem(tablerow, 3, QtWidgets.QTableWidgetItem(row[4]))
 
             tablerow += 1
-
-        if self.vaultuser.unlocked:
-            self.vaultuser.show_popup()
 
     def checked(self):
         if self.enable_checkbox.isChecked():
@@ -369,8 +378,6 @@ class PasswordVault(QDialog):
             self.submit_btn.clicked.connect(self.submit_entry)
 
     def submit_entry(self):
-        if not self.vaultuser.unlocked:
-            self.vaultuser.unlock_vault()
         result = add_entry(self.vault_path, self.entry_name, self.web_url, self.username, self.passwd)
         if result:
             self.name_entry.clear()
@@ -504,31 +511,7 @@ class User():
         passwd = rsa_vault_decrypt(self.pri_key, self.userid)
         self.unlocked = aes_vault_decrypt(self.vault, passwd)
 
-    def show_popup(self):
-        msgBox = QMessageBox()
-        msgBox.setIcon(QMessageBox.Information)
-        msgBox.setWindowTitle("Lock Vault")
-        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msgBox.setDefaultButton(QMessageBox.Yes)
-        msgBox.setInformativeText("Do you want to Lock your vault?")
-        msgBox.buttonClicked.connect(self.popup_button)
-
-        msgBox.exec_()
-
-    def popup_button(self):
-        if QMessageBox.Yes:
-            if self.locked:
-                pass
-            elif self.unlocked:
-                self.unlocked = False
-                self.vault_lock()
-            else:
-                pass
-
-        elif QMessageBox.No:
-            pass
-        else:
-            pass
+        return self.unlocked
 
 
 def exit_handler():
