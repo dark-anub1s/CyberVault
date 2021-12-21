@@ -266,20 +266,33 @@ class PasswordVault(QDialog):
         self.getuser()
 
         # Setup window entry boxes and buttons to be disabled at start
+        self.submit_btn.hide()
+        self.lock_vault_btn.hide()
+        self.enable_checkbox.hide()
+        self.update_entry_btn.hide()
+        self.delete_entry_btn.hide()
+        self.entry_label.hide()
+        self.name_entry.hide()
+        self.weburl_leabel.hide()
+        self.web_url_entry.hide()
+        self.user_label.hide()
+        self.user_entry.hide()
+        self.passwd_label.hide()
+        self.password_entry.hide()
+        self.add_entry_btn.hide()
+
         self.name_entry.setEnabled(False)
         self.web_url_entry.setEnabled(False)
         self.user_entry.setEnabled(False)
         self.password_entry.setEnabled(False)
         self.submit_btn.setEnabled(False)
         self.add_entry_btn.setEnabled(False)
-        self.submit_btn.hide()
-        self.update_entry_btn.hide()
-        self.delete_entry_btn.hide()
         self.lock_vault_btn.setEnabled(False)
-        self.lock_vault_btn.hide()
+        
         self.enable_checkbox.stateChanged.connect(self.checked)
         self.account_list.clicked.connect(self.loadtable)
         self.add_entry_btn.clicked.connect(self.add_entry)
+        
 
         self.unlock_vault_btn.clicked.connect(self.vault_unlock)
         self.lock_vault_btn.clicked.connect(self.vault_lock)
@@ -290,6 +303,16 @@ class PasswordVault(QDialog):
         self.lock_vault_btn.show()
         self.unlock_vault_btn.setEnabled(False)
         self.unlock_vault_btn.hide()
+        self.enable_checkbox.show()
+        self.entry_label.show()
+        self.name_entry.show()
+        self.weburl_leabel.show()
+        self.web_url_entry.show()
+        self.user_label.show()
+        self.user_entry.show()
+        self.passwd_label.show()
+        self.password_entry.show()
+        self.add_entry_btn.show()
         
         if result:
             self.loadlist()
@@ -299,7 +322,17 @@ class PasswordVault(QDialog):
         self.lock_vault_btn.setEnabled(False)
         self.lock_vault_btn.hide()
         self.unlock_vault_btn.setEnabled(True)
-        self.unlock_vault_btn.show()
+        self.unlock_vault_btn.hide()
+        self.enable_checkbox.hide()
+        self.entry_label.hide()
+        self.name_entry.hide()
+        self.weburl_leabel.hide()
+        self.web_url_entry.hide()
+        self.user_label.hide()
+        self.user_entry.hide()
+        self.passwd_label.hide()
+        self.password_entry.hide()
+        self.add_entry_btn.hide()
 
     def getuser(self):
         user, pubkey, vault, s_key, userid = get_user(self.username)
@@ -506,6 +539,7 @@ class User():
     def lock_vault(self):
         session, nonce, tag, passwd = get_user_enc_data(self.userid)
         self.locked = aes_vault_encrypt(self.vault, passwd)
+        session, nonce, tag, passwd = None, None, None, None
 
     def unlock_vault(self):
         passwd = rsa_vault_decrypt(self.pri_key, self.userid)
