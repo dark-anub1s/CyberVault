@@ -333,6 +333,7 @@ class PasswordVault(QDialog):
         self.passwd_label.hide()
         self.password_entry.hide()
         self.add_entry_btn.hide()
+        self.unlock_vault_btn.setEnabled(True)
 
     def getuser(self):
         user, pubkey, vault, s_key, userid = get_user(self.username)
