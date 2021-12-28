@@ -77,9 +77,11 @@ def rsa_vault_decrypt(private_key, userid):
     # vault_dir = os.path.join(home, "CyberVault")
     # data_file = os.path.join(vault_dir, "data.bin")
     esk, nonce, tag, ctext = get_user_enc_data(userid)
-
-    # with open(private_key, 'r') as pri_key:
-    key = RSA.import_key(private_key) #pri_key.read())
+    if type(private_key) == str:
+        with open(private_key, 'r') as pri_key:
+            key = RSA.import_key(pri_key.read())       
+    else:
+        key = RSA.import_key(private_key)
         # with open(data_file, 'rb') as f:
         #     # esk = enc_session_key, ctext = ciphertext
         #     esk, nonce, tag, ctext = [f.read(x) for x in
