@@ -44,15 +44,7 @@ def generate_keys():
 
 # Done
 def rsa_vault_encrypt(public_key, password, vault=None):
-    # home = Path.home()
-    # home = os.path.join(home, "Documents")
-    # vault_dir = os.path.join(home, "CyberVault")
-    # data_file = os.path.join(vault_dir, "data.bin")
-
-    # if not os.path.isdir(vault_dir):
-    #     os.makedirs(vault_dir)
-
-    data = password # password.encode('utf-8')
+    data = password
     key = RSA.import_key(public_key)
     session_key = get_random_bytes(32)
 
@@ -65,27 +57,17 @@ def rsa_vault_encrypt(public_key, password, vault=None):
     ciphertext, tag = cipher_aes.encrypt_and_digest(data)
 
     return enc_session_key, cipher_aes.nonce, tag, ciphertext
-    # with open(data_file, 'wb') as f:
-    #     for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext):
-    #         f.write(x)
 
 
 # Done
 def rsa_vault_decrypt(private_key, userid):
-    # home = Path.home()
-    # home = os.path.join(home, "Documents")
-    # vault_dir = os.path.join(home, "CyberVault")
-    # data_file = os.path.join(vault_dir, "data.bin")
     esk, nonce, tag, ctext = get_user_enc_data(userid)
     if type(private_key) == str:
         with open(private_key, 'r') as pri_key:
             key = RSA.import_key(pri_key.read())       
     else:
         key = RSA.import_key(private_key)
-        # with open(data_file, 'rb') as f:
-        #     # esk = enc_session_key, ctext = ciphertext
-        #     esk, nonce, tag, ctext = [f.read(x) for x in
-        #                                     (key.size_in_bytes(), 16, 16, -1)]
+
 
     # Decrypt session key with private key.
     cipher_rsa = PKCS1_OAEP.new(key)
@@ -99,7 +81,6 @@ def rsa_vault_decrypt(private_key, userid):
 
 # Done
 def aes_vault_encrypt(filename, key):
-    # key = key.encode("utf-8")
     key = pad(key, AES.block_size)
 
     try:
