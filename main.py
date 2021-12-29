@@ -256,10 +256,10 @@ class QRCodeGenerator(QWidget):
         return self.verified
 
 
-class PasswordVault(QDialog):
+class PasswordVault(QMainWindow):
     def __init__(self, vault, username, prikey):
         super(PasswordVault, self).__init__()
-        loadUi("passwordvault.ui", self)
+        loadUi("passwordvault2.ui", self)
         self.vault_path = Path(vault)
         self.username = username
         self.prikey = prikey
@@ -334,6 +334,8 @@ class PasswordVault(QDialog):
         self.password_entry.hide()
         self.add_entry_btn.hide()
         self.unlock_vault_btn.setEnabled(True)
+        self.account_list.clear()
+        self.account_table.clear()
 
     def getuser(self):
         user, pubkey, vault, s_key, userid = get_user(self.username)
