@@ -1,5 +1,4 @@
 import os
-import time
 import base64
 import random
 import string
@@ -13,17 +12,19 @@ from Crypto.PublicKey import RSA
 from database import get_user_enc_data
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Random import get_random_bytes
-from Crypto.Util.Padding import pad, unpad
+from Crypto.Util.Padding import pad
 
 if os.name == 'nt':
     import winreg
 
 
 # Done
-def clipboard_wipe(enabled=False, delay=5):
-    while enabled:
-        pyperclip3.copy("")
-        time.sleep(delay)
+def clipboard_wipe():
+    pyperclip3.copy("")
+
+
+def clipboard_copy(data):
+    pyperclip3.copy(data)
 
 
 # Done
@@ -207,7 +208,8 @@ This parameter is what sets the complexity of the password (weak, strong, very).
         # Human Readable password
         password = "".join(random.choices(pass_list, k=length))
 
-    pass_label.set(password)
+    pass_label.setText(password)
+    return password
 
 
 # Done

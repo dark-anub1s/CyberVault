@@ -4,15 +4,16 @@ import sys
 import qrcode
 import sqlite3
 from pathlib import Path
-from PyQt5.uic import loadUi
-from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, rsa_vault_decrypt, aes_decrypt
-from PyQt5 import QtWidgets
 from PyQt5 import QtCore
-from pyotp import random_base32, TOTP
-from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, get_user_enc_data
+from PyQt5 import QtWidgets
+from PyQt5.uic import loadUi
 from PIL.ImageQt import ImageQt
-from PyQt5.QtGui import QPixmap, QImage, QFont, QBrush, QColor
+from pyotp import random_base32, TOTP
+from PyQt5.QtGui import QPixmap, QFont, QBrush, QColor
+from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_copy
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
+from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user
+from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, generate_password
 
 
 # Done
@@ -215,9 +216,60 @@ class OpenCyberVault(QDialog):
 
 
 class PasswordGenerator(QWidget):
-    def __init__(self):
+    def __init__(self, pass_entry):
         super(PasswordGenerator, self).__init__()
-        loadUi("password.ui", self)
+        loadUi("passwordgenerator.ui", self)
+
+        self.slide_value = 11
+        self.save_pass = pass_entry
+        self.pass_to_use = None
+        self.upper = self.upper_checkbox.isChecked()
+        self.lower = self.lower_checkbox.isChecked()
+        self.num = self.num_checkbox.isChecked()
+        self.special = self.special_checkbox.isChecked()
+        self.pass_len_value.setText(str(self.slide_value))
+
+        self.copy_pass_btn.clicked.connect(self.use_pass)
+        self.gen_pass_btn.clicked.connect(self.pass_generator)
+        self.num_checkbox.stateChanged.connect(self.num_select)
+        self.upper_checkbox.stateChanged.connect(self.upper_select)
+        self.lower_checkbox.stateChanged.connect(self.lower_select)
+        self.pass_len_slider.valueChanged.connect(self.slide_change)
+        self.special_checkbox.stateChanged.connect(self.special_select)
+
+    def slide_change(self, value):
+        self.pass_len_value.setText(str(value))
+        self.slide_value = value
+
+    def upper_select(self):
+        if self.upper_checkbox.isChecked():
+            self.upper = True
+        else:
+            self.upper = False
+
+    def lower_select(self):
+        if self.lower_checkbox.isChecked():
+            self.lower = True
+        else:
+            self.lower = False
+
+    def num_select(self):
+        if self.num_checkbox.isChecked():
+            self.num = True
+        else:
+            self.num = False
+
+    def special_select(self):
+        if self.special_checkbox.isChecked():
+            self.special = True
+        else:
+            self.special = False
+
+    def pass_generator(self):
+        self.pass_to_use = generate_password(self.upper, self.lower, self.num, self.special, self.gen_pass_label, self.slide_value)
+
+    def use_pass(self):
+        self.save_pass.setText(self.pass_to_use)
 
 
 # Done
@@ -273,7 +325,9 @@ class PasswordVault(QDialog):
         self.vault_user = None
         self.vault_locked = True
         self.username = username
+        self.pass_checker = None
         self.vault_unlocked = False
+        self.passwd_generator = None
         self.vault_path = Path(vault)
 
         # Get the required info for the current user
@@ -283,22 +337,29 @@ class PasswordVault(QDialog):
         self.vault_lock(enc_vault)
 
         # Setup window entry boxes and buttons to be disabled at start
+        self.copy_btn.setEnabled(False)
         self.name_entry.setEnabled(False)
         self.user_entry.setEnabled(False)
         self.submit_btn.setEnabled(False)
+        self.pass_gen_btn.setEnabled(False)
         self.add_entry_btn.setEnabled(False)
         self.web_url_entry.setEnabled(False)
+        self.clear_clip_btn.setEnabled(False)
         self.password_entry.setEnabled(False)
+        self.check_pass_btn.setEnabled(False)
         self.lock_vault_btn.setEnabled(False)
         self.enable_checkbox.setEnabled(False)
         self.update_entry_btn.setEnabled(False)
         self.delete_entry_btn.setEnabled(False)
 
+        self.pass_gen_btn.clicked.connect(self.pass_gen)
         self.account_list.clicked.connect(self.load_table)
+        self.account_table.clicked.connect(self.copy_pass)
         self.add_entry_btn.clicked.connect(self.add_entry)
-        self.lock_vault_btn.clicked.connect(lambda: self.vault_lock(enc_vault=True))
+        self.check_pass_btn.clicked.connect(self.check_pass)
         self.unlock_vault_btn.clicked.connect(self.vault_unlock)
         self.enable_checkbox.stateChanged.connect(self.is_checked)
+        self.lock_vault_btn.clicked.connect(lambda: self.vault_lock(enc_vault=True))
 
     # Done
     def vault_unlock(self):
@@ -310,19 +371,25 @@ class PasswordVault(QDialog):
             self.unlock_vault_btn.setEnabled(False)
 
             # Display entry boxes and labels.
+            self.copy_btn.show()
             self.url_label.show()
             self.user_label.show()
             self.name_entry.show()
             self.user_entry.show()
             self.entry_label.show()
             self.passwd_label.show()
+            self.pass_gen_btn.show()
             self.add_entry_btn.show()
             self.web_url_entry.show()
+            self.clear_clip_btn.show()
             self.password_entry.show()
             self.lock_vault_btn.show()
             self.enable_checkbox.show()
             self.update_entry_btn.show()
             self.delete_entry_btn.show()
+
+            self.check_pass_btn.show()
+            self.check_pass_btn.setEnabled(True)
 
             self.enable_checkbox.setEnabled(True)
             self.enable_checkbox.show()
@@ -340,7 +407,12 @@ class PasswordVault(QDialog):
         self.lock_vault_btn.setEnabled(False)
         self.lock_vault_btn.hide()
 
+        self.copy_btn.setEnabled(False)
+        self.pass_gen_btn.setEnabled(False)
+        self.clear_clip_btn.setEnabled(False)
+
         # Hide entry boxes and labels.
+        self.copy_btn.hide()
         self.url_label.hide()
         self.user_label.hide()
         self.name_entry.hide()
@@ -348,9 +420,11 @@ class PasswordVault(QDialog):
         self.submit_btn.hide()
         self.entry_label.hide()
         self.passwd_label.hide()
+        self.pass_gen_btn.hide()
         self.add_entry_btn.hide()
         self.web_url_entry.hide()
         self.password_entry.hide()
+        self.clear_clip_btn.hide()
         self.enable_checkbox.hide()
         self.update_entry_btn.hide()
         self.delete_entry_btn.hide()
@@ -358,8 +432,13 @@ class PasswordVault(QDialog):
         self.enable_checkbox.hide()
         self.enable_checkbox.setEnabled(False)
 
+        self.check_pass_btn.hide()
+        self.check_pass_btn.setEnabled(False)
+
         self.account_list.clear()
         self.account_table.clear()
+
+        clipboard_wipe()
 
     # Done
     def get_user(self):
@@ -419,6 +498,9 @@ class PasswordVault(QDialog):
         self.password_entry.setEnabled(True)
         self.submit_btn.setEnabled(True)
         self.add_entry_btn.setEnabled(True)
+        self.pass_gen_btn.setEnabled(True)
+        self.copy_btn.setEnabled(True)
+        self.clear_clip_btn.setEnabled(True)
 
     # Done
     def entry_disable(self):
@@ -428,6 +510,9 @@ class PasswordVault(QDialog):
         self.password_entry.setEnabled(False)
         self.submit_btn.setEnabled(False)
         self.add_entry_btn.setEnabled(False)
+        self.pass_gen_btn.setEnabled(False)
+        self.copy_btn.setEnabled(False)
+        self.clear_clip_btn.setEnabled(False)
 
     # Done
     def add_entry(self):
@@ -454,6 +539,23 @@ class PasswordVault(QDialog):
 
             self.load_list()
 
+    def copy_pass(self):
+        request = self.account_table.currentItem()
+        if request:
+            clipboard_copy(request.text())
+
+    def pass_gen(self):
+        if self.passwd_generator is None:
+            self.passwd_generator = PasswordGenerator(self.password_entry)
+
+        self.passwd_generator.show()
+        
+    def check_pass(self):
+        if self.pass_checker == None:
+            self.pass_checker = PasswordChecker(self.vault_path)
+
+        self.pass_checker.show()
+
 
 # Done
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
@@ -467,10 +569,12 @@ class PasswordDelegate(QtWidgets.QStyledItemDelegate):
 
 # Done
 class PasswordChecker(QDialog):
-    def __init__(self):
+    def __init__(self, vault):
         super(PasswordChecker, self).__init__()
         loadUi("passwordchecker.ui", self)
         self.index_list = []
+        self.conn = sqlite3.connect(vault)
+        self.cur = self.conn.cursor()
         self.pass_check_table.setStyleSheet("background-color: rgb(141, 145, 141);")
         self.pass_check_table.setColumnWidth(0, 325)
         self.pass_check_table.setColumnWidth(1, 325)
@@ -482,11 +586,7 @@ class PasswordChecker(QDialog):
         self.pass_check_table.clicked.connect(self.get_indexs)
 
     def create_table(self):
-        # vault_path = Path('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
-        # vault_path = Path('/home/anubis/Documents/Vault_testing/thiggins.cvdb')
-        conn = sqlite3.connect(vault_path)
-        self.cur = conn.cursor()
-
+        self.pass_check_table.clear()
         db = self.cur.execute("""SELECT * FROM cybervault""")
         table_rows = db.fetchall()
         table_rows = len(table_rows)
@@ -501,9 +601,9 @@ class PasswordChecker(QDialog):
         results = self.cur.execute("SELECT * FROM cybervault")
         tablerow = 0
         for row in results:
-            self.pass_check_table.setItem(tablerow, 0, QtWidgets.QTableWidgetItem(row[0]))
-            self.pass_check_table.setItem(tablerow, 1, QtWidgets.QTableWidgetItem(row[2]))
-            self.pass_check_table.setItem(tablerow, 2, QtWidgets.QTableWidgetItem(row[3]))
+            self.pass_check_table.setItem(tablerow, 0, QtWidgets.QTableWidgetItem(row[1]))
+            self.pass_check_table.setItem(tablerow, 1, QtWidgets.QTableWidgetItem(row[3]))
+            self.pass_check_table.setItem(tablerow, 2, QtWidgets.QTableWidgetItem(row[4]))
 
             tablerow += 1
 
@@ -512,40 +612,31 @@ class PasswordChecker(QDialog):
 
         result, num = pwn_checker(password)
 
-        if result == True:
+        if result:
             self.single_pass_result_lable.setText(f"Password '{password}' has been compromised {num} times")
             self.single_pass_result_lable.setStyleSheet("background-color: rgb(255, 255, 0);")
-        elif result == False:
+        else:
             self.single_pass_result_lable.setText(f"Password '{password}' is safe to use")
             self.single_pass_result_lable.setStyleSheet("background-color: rgb(144, 238, 144);")
 
     def check_vault_passwords(self):
         font = QFont()
         font.setBold(True)
-        ybrush = QBrush(QColor(255, 255, 0))
-        gbrush = QBrush(QColor(144, 238, 144))
 
         for idx in self.index_list:
             pass_to_check = self.pass_check_table.item(idx, 2).text()
             result, num = pwn_checker(pass_to_check)
             if result:
-                self.pass_check_table.item(idx, 0).setFont(font)
-                self.pass_check_table.item(idx, 0).setBackground(ybrush)
-                self.pass_check_table.item(idx, 1).setFont(font)
-                self.pass_check_table.item(idx, 1).setBackground(ybrush)
-                self.pass_check_table.item(idx, 2).setFont(font)
-                self.pass_check_table.item(idx, 2).setBackground(ybrush)
-
-            elif result == False:
-                self.pass_check_table.item(idx, 0).setFont(font)
-                self.pass_check_table.item(idx, 0).setBackground(gbrush)
-                self.pass_check_table.item(idx, 1).setFont(font)
-                self.pass_check_table.item(idx, 1).setBackground(gbrush)
-                self.pass_check_table.item(idx, 2).setFont(font)
-                self.pass_check_table.item(idx, 2).setBackground(gbrush)
-
+                brush = QBrush(QColor(255, 255, 0))
             else:
-                pass
+                brush = QBrush(QColor(144, 238, 144))
+
+            self.pass_check_table.item(idx, 0).setFont(font)
+            self.pass_check_table.item(idx, 0).setBackground(brush)
+            self.pass_check_table.item(idx, 1).setFont(font)
+            self.pass_check_table.item(idx, 1).setBackground(brush)
+            self.pass_check_table.item(idx, 2).setFont(font)
+            self.pass_check_table.item(idx, 2).setBackground(brush)
 
         self.index_list.clear()
 
