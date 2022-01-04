@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 import os
 import sys
-import time
 import qrcode
 import sqlite3
 from pathlib import Path
 from PyQt5.uic import loadUi
-from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_vault_encrypt, rsa_vault_decrypt, aes_vault_decrypt
+from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, rsa_vault_decrypt, aes_decrypt
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
-from PyQt5.QtCore import QEventLoop
 from pyotp import random_base32, TOTP
 from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, get_user_enc_data
 from PIL.ImageQt import ImageQt
@@ -43,13 +41,16 @@ class UI(QMainWindow):
         widget.setCurrentIndex(widget.currentIndex()+1)
 
 
+# Done
 class NewUser(QDialog):
     def __init__(self):
-        # Setup QR Code Generator Window variable
-        self.qrcodewindow = None
         super(NewUser, self).__init__()
         loadUi("newaccount.ui", self)
+        self.uname = None
         self.home = Path.home()
+        self.vault_state = None
+        self.qrcodewindow = None
+        self.vault_passwd = None
         self.home = os.path.join(self.home, "Documents")
 
         # Setting up on screen options
@@ -58,10 +59,10 @@ class NewUser(QDialog):
         self.create_account_button.clicked.connect(self.create_account)
 
         # Setting up key variables
-        self.pri_key = None
-        self.pub_key = None
         self.vault = None
         self.s_key = None
+        self.pri_key = None
+        self.pub_key = None
         self.account = False
 
     def enable_mfa(self):
@@ -74,53 +75,49 @@ class NewUser(QDialog):
         if self.qrcodewindow is None:
             self.qrcodewindow = QRCodeGenerator(self.s_key, auth)
 
-
         self.qrcodewindow.show()
 
-
     def create_account(self):
+        # Remove option to not have 2FA, once program is 100% functional.
+        userid = None
         self.uname = self.username.text()
+
         self.pri_key, self.pub_key = generate_keys()
         self.save_key()
         self.get_vault_name()
         self.vault_passwd = vault_password()
 
+        result = create_cybervault(self.uname, self.vault)
         if self.checked:
             # Create account in database and make password vault with MFA
-            result = create_cybervault(self.uname, self.vault)
             if result:
                 self.account = True
-                userid = add_user(self.uname, self.pub_key, self.s_key, self.vault)
-                session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
-                add_user_enc_data(userid, session, nonce, tag, ciphertext)
-                self.vault_state = aes_vault_encrypt(self.vault, self.vault_passwd)
+                userid = add_user(self.uname, self.pub_key, self.vault, self.s_key)
+
         else:
-            result = create_cybervault(self.uname, self.vault)
             if result:
                 self.account = True
-                userid = add_user(self.uname, self.pub_key, self.s_key, self.vault)
-                session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
-                add_user_enc_data(userid, session, nonce, tag, ciphertext)
-                self.vault_state = aes_vault_encrypt(self.vault, self.vault_passwd)
+                userid = add_user(self.uname, self.pub_key, self.vault)
+
+        session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
+        if userid: add_user_enc_data(userid, session, nonce, tag, ciphertext)
 
         if self.account:
             self.open_vault()
 
     def save_key(self):
-        fname = QFileDialog.getSaveFileName(self, "Save Key", str(self.home),
+        f_name = QFileDialog.getSaveFileName(self, "Save Key", str(self.home),
                                             'Key File (*.pem)')
-        if fname == ('', ''):
+        if f_name == ('', ''):
             pass
         else:
-            file = fname[0]
+            file = f_name[0]
             if os.name == 'posix':
                 file = f"{file}.pem"
-            
 
             with open(file, 'wb') as f:
                 f.write(self.pri_key)
                 f.write(b'\n')
-
 
     def get_vault_name(self):
         vault = QFileDialog.getSaveFileName(self, "Save Vault", str(self.home),
@@ -134,15 +131,21 @@ class NewUser(QDialog):
                 self.vault = f"{vault[0]}.cvdb"
 
     def open_vault(self):
-        passvault = PasswordVault(self.vault, self.uname, self.pri_key)
+        passvault = PasswordVault(self.vault, self.uname, self.pri_key, enc_vault=True)
         widget.addWidget(passvault)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
 
+# Done
 class Login(QDialog):
     def __init__(self):
         super(Login, self).__init__()
         loadUi("login.ui", self)
+        self.username = None
+        self.pri_key = None
+        self.checked = None
+        self.vault = None
+        self.otp_s_key = None
         self.home = Path.home()
         self.home = os.path.join(self.home, "Documents")
 
@@ -151,12 +154,11 @@ class Login(QDialog):
         self.verify_code_btn.hide()
 
         self.login_btn.clicked.connect(self.login)
-        self.load_rsa_button.clicked.connect(self.loadkey)
+        self.load_rsa_button.clicked.connect(self.load_key)
 
-    def loadkey(self):
-        fname = QFileDialog.getOpenFileName(self, 'Load RSA Key', str(self.home), 'Key File (*.pem)')
-        self.rsa_key_entry.setText(fname[0])
-
+    def load_key(self):
+        f_name = QFileDialog.getOpenFileName(self, 'Load RSA Key', str(self.home), 'Key File (*.pem)')
+        self.rsa_key_entry.setText(f_name[0])
 
     def login(self):
         self.username = self.user_entry.text()
@@ -209,18 +211,16 @@ class OpenCyberVault(QDialog):
     def __init__(self):
         super(OpenCyberVault, self).__init__()
         loadUi("opencybervault.ui", self)
-        self.main_menu_button.clicked.connect(self.back_to_main)
-
-    def back_to_main(self):
-        widget.setCurrentIndex(widget.currentIndex()-1)
+        self.main_menu_button.clicked.connect(back_to_main)
 
 
 class PasswordGenerator(QWidget):
     def __init__(self):
-        super(PasswordGenerate, self).__init__()
+        super(PasswordGenerator, self).__init__()
         loadUi("password.ui", self)
 
 
+# Done
 class QRCodeGenerator(QWidget):
     def __init__(self, s_key, auth_string=None, login=False, current_code=None):
         super(QRCodeGenerator, self).__init__()
@@ -230,7 +230,7 @@ class QRCodeGenerator(QWidget):
         self.current = current_code
         self.login_to_account = login
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.verify_btn.clicked.connect(self.verifyotp)
+        self.verify_btn.clicked.connect(self.verify_otp)
 
         if not self.login_to_account:
             self.auth = auth_string
@@ -239,7 +239,7 @@ class QRCodeGenerator(QWidget):
             pix = QPixmap.fromImage(self.qr)
             self.qrcode_label.setPixmap(pix)
 
-    def verifyotp(self):
+    def verify_otp(self):
         mfa_totp = TOTP(self.s_key)
         if not self.login_to_account:
             self.current = self.otp_entry.text()
@@ -256,93 +256,118 @@ class QRCodeGenerator(QWidget):
         return self.verified
 
 
-class PasswordVault(QMainWindow):
-    def __init__(self, vault, username, prikey):
+# Done
+class PasswordVault(QDialog):
+    def __init__(self, vault, username, pri_key, enc_vault=False):
         super(PasswordVault, self).__init__()
-        loadUi("passwordvault2.ui", self)
-        self.vault_path = Path(vault)
+        loadUi("passwordvault.ui", self)
+
+        # Setup variables needed to run class
+        self.conn = None
+        self.cur = None
+        self.passwd = None
+        self.web_url = None
+        self.username = None
+        self.entry_name = None
+        self.pri_key = pri_key
+        self.vault_user = None
+        self.vault_locked = True
         self.username = username
-        self.prikey = prikey
-        self.getuser()
+        self.vault_unlocked = False
+        self.vault_path = Path(vault)
+
+        # Get the required info for the current user
+        self.get_user()
+
+        # Hide all disabled buttons at start
+        self.vault_lock(enc_vault)
 
         # Setup window entry boxes and buttons to be disabled at start
-        self.submit_btn.hide()
+        self.name_entry.setEnabled(False)
+        self.user_entry.setEnabled(False)
+        self.submit_btn.setEnabled(False)
+        self.add_entry_btn.setEnabled(False)
+        self.web_url_entry.setEnabled(False)
+        self.password_entry.setEnabled(False)
+        self.lock_vault_btn.setEnabled(False)
+        self.enable_checkbox.setEnabled(False)
+        self.update_entry_btn.setEnabled(False)
+        self.delete_entry_btn.setEnabled(False)
+
+        self.account_list.clicked.connect(self.load_table)
+        self.add_entry_btn.clicked.connect(self.add_entry)
+        self.lock_vault_btn.clicked.connect(lambda: self.vault_lock(enc_vault=True))
+        self.unlock_vault_btn.clicked.connect(self.vault_unlock)
+        self.enable_checkbox.stateChanged.connect(self.is_checked)
+
+    # Done
+    def vault_unlock(self):
+        if self.vault_user.unlock_vault():
+            # Enable and Disable lock and unlock buttons plus show/hide
+            self.lock_vault_btn.show()
+            self.unlock_vault_btn.hide()
+            self.lock_vault_btn.setEnabled(True)
+            self.unlock_vault_btn.setEnabled(False)
+
+            # Display entry boxes and labels.
+            self.url_label.show()
+            self.user_label.show()
+            self.name_entry.show()
+            self.user_entry.show()
+            self.entry_label.show()
+            self.passwd_label.show()
+            self.add_entry_btn.show()
+            self.web_url_entry.show()
+            self.password_entry.show()
+            self.lock_vault_btn.show()
+            self.enable_checkbox.show()
+            self.update_entry_btn.show()
+            self.delete_entry_btn.show()
+
+            self.enable_checkbox.setEnabled(True)
+            self.enable_checkbox.show()
+
+            self.load_list()
+
+    # Done
+    def vault_lock(self, enc_vault):
+        if enc_vault:
+            self.vault_user.lock_vault()
+
+        self.unlock_vault_btn.setEnabled(True)
+        self.unlock_vault_btn.show()
+
+        self.lock_vault_btn.setEnabled(False)
         self.lock_vault_btn.hide()
+
+        # Hide entry boxes and labels.
+        self.url_label.hide()
+        self.user_label.hide()
+        self.name_entry.hide()
+        self.user_entry.hide()
+        self.submit_btn.hide()
+        self.entry_label.hide()
+        self.passwd_label.hide()
+        self.add_entry_btn.hide()
+        self.web_url_entry.hide()
+        self.password_entry.hide()
         self.enable_checkbox.hide()
         self.update_entry_btn.hide()
         self.delete_entry_btn.hide()
-        self.entry_label.hide()
-        self.name_entry.hide()
-        self.weburl_leabel.hide()
-        self.web_url_entry.hide()
-        self.user_label.hide()
-        self.user_entry.hide()
-        self.passwd_label.hide()
-        self.password_entry.hide()
-        self.add_entry_btn.hide()
 
-        self.name_entry.setEnabled(False)
-        self.web_url_entry.setEnabled(False)
-        self.user_entry.setEnabled(False)
-        self.password_entry.setEnabled(False)
-        self.submit_btn.setEnabled(False)
-        self.add_entry_btn.setEnabled(False)
-        self.lock_vault_btn.setEnabled(False)
-        
-        self.enable_checkbox.stateChanged.connect(self.checked)
-        self.account_list.clicked.connect(self.loadtable)
-        self.add_entry_btn.clicked.connect(self.add_entry)
-        
-
-        self.unlock_vault_btn.clicked.connect(self.vault_unlock)
-        self.lock_vault_btn.clicked.connect(self.vault_lock)
-
-    def vault_unlock(self):
-        result = self.vaultuser.unlock_vault()
-        self.lock_vault_btn.setEnabled(True)
-        self.lock_vault_btn.show()
-        self.unlock_vault_btn.setEnabled(False)
-        self.unlock_vault_btn.hide()
-        self.enable_checkbox.show()
-        self.entry_label.show()
-        self.name_entry.show()
-        self.weburl_leabel.show()
-        self.web_url_entry.show()
-        self.user_label.show()
-        self.user_entry.show()
-        self.passwd_label.show()
-        self.password_entry.show()
-        self.add_entry_btn.show()
-        
-        if result:
-            self.loadlist()
-
-    def vault_lock(self):
-        self.vaultuser.lock_vault()
-        self.lock_vault_btn.setEnabled(False)
-        self.lock_vault_btn.hide()
-        self.unlock_vault_btn.setEnabled(True)
-        self.unlock_vault_btn.hide()
         self.enable_checkbox.hide()
-        self.entry_label.hide()
-        self.name_entry.hide()
-        self.weburl_leabel.hide()
-        self.web_url_entry.hide()
-        self.user_label.hide()
-        self.user_entry.hide()
-        self.passwd_label.hide()
-        self.password_entry.hide()
-        self.add_entry_btn.hide()
-        self.unlock_vault_btn.setEnabled(True)
+        self.enable_checkbox.setEnabled(False)
+
         self.account_list.clear()
         self.account_table.clear()
 
-    def getuser(self):
+    # Done
+    def get_user(self):
         user, pubkey, vault, s_key, userid = get_user(self.username)
-        self.vaultuser = User(self.prikey, pubkey, s_key, vault, userid)
+        self.vault_user = User(self.pri_key, pubkey, s_key, vault, userid)
 
-
-    def loadlist(self):
+    # Done
+    def load_list(self):
         self.account_list.clear()
         self.conn = sqlite3.connect(self.vault_path)
         self.cur = self.conn.cursor()
@@ -353,8 +378,9 @@ class PasswordVault(QMainWindow):
         for i in range(len(names)):
             entry = QtWidgets.QListWidgetItem(names[i][0])
             self.account_list.addItem(entry)
-        
-    def loadtable(self):
+
+    # Done
+    def load_table(self):
         self.account_table.setRowCount(15)
         self.account_table.setColumnCount(4)
         self.account_table.setColumnWidth(0, 163)
@@ -365,26 +391,27 @@ class PasswordVault(QMainWindow):
         account_indexes = []
         delegate = PasswordDelegate(self.account_table)
         self.account_table.setItemDelegate(delegate)
-        table_len = 0
         request = self.account_list.currentItem()
 
         results = self.cur.execute("SELECT * FROM cybervault WHERE name=? LIMIT 15", (request.text(),))
-        tablerow = 0
+        table_row = 0
         for row in results:
             account_indexes.append(row[0])
-            self.account_table.setItem(tablerow, 0, QtWidgets.QTableWidgetItem(row[1]))
-            self.account_table.setItem(tablerow, 1, QtWidgets.QTableWidgetItem(row[2]))
-            self.account_table.setItem(tablerow, 2, QtWidgets.QTableWidgetItem(row[3]))
-            self.account_table.setItem(tablerow, 3, QtWidgets.QTableWidgetItem(row[4]))
+            self.account_table.setItem(table_row, 0, QtWidgets.QTableWidgetItem(row[1]))
+            self.account_table.setItem(table_row, 1, QtWidgets.QTableWidgetItem(row[2]))
+            self.account_table.setItem(table_row, 2, QtWidgets.QTableWidgetItem(row[3]))
+            self.account_table.setItem(table_row, 3, QtWidgets.QTableWidgetItem(row[4]))
 
-            tablerow += 1
+            table_row += 1
 
-    def checked(self):
+    # Done
+    def is_checked(self):
         if self.enable_checkbox.isChecked():
             self.entry_enable()
         else:
             self.entry_disable()
 
+    # Done
     def entry_enable(self):
         self.name_entry.setEnabled(True)
         self.web_url_entry.setEnabled(True)
@@ -393,6 +420,7 @@ class PasswordVault(QMainWindow):
         self.submit_btn.setEnabled(True)
         self.add_entry_btn.setEnabled(True)
 
+    # Done
     def entry_disable(self):
         self.name_entry.setEnabled(False)
         self.web_url_entry.setEnabled(False)
@@ -401,7 +429,7 @@ class PasswordVault(QMainWindow):
         self.submit_btn.setEnabled(False)
         self.add_entry_btn.setEnabled(False)
 
-
+    # Done
     def add_entry(self):
         self.entry_name = self.name_entry.text()
         self.web_url = self.web_url_entry.text()
@@ -413,6 +441,7 @@ class PasswordVault(QMainWindow):
             self.submit_btn.setEnabled(True)
             self.submit_btn.clicked.connect(self.submit_entry)
 
+    # Done
     def submit_entry(self):
         result = add_entry(self.vault_path, self.entry_name, self.web_url, self.username, self.passwd)
         if result:
@@ -423,9 +452,10 @@ class PasswordVault(QMainWindow):
             self.enable_checkbox.setChecked(False)
             self.submit_btn.hide()
 
-            self.loadlist()
+            self.load_list()
 
 
+# Done
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super().initStyleOption(option, index)
@@ -435,6 +465,7 @@ class PasswordDelegate(QtWidgets.QStyledItemDelegate):
             option.text = chr(hint) * len(option.text)
 
 
+# Done
 class PasswordChecker(QDialog):
     def __init__(self):
         super(PasswordChecker, self).__init__()
@@ -449,7 +480,6 @@ class PasswordChecker(QDialog):
         self.check_vault_pass_btn.clicked.connect(self.check_vault_passwords)
         self.load_vault_btn.clicked.connect(self.create_table)
         self.pass_check_table.clicked.connect(self.get_indexs)
-
 
     def create_table(self):
         # vault_path = Path('C:/Users/anubis/Documents/Vault_testing/thiggins.cvdb')
@@ -540,15 +570,19 @@ class User():
         pass
 
     def lock_vault(self):
-        session, nonce, tag, passwd = get_user_enc_data(self.userid)
-        self.locked = aes_vault_encrypt(self.vault, passwd)
-        session, nonce, tag, passwd = None, None, None, None
+        passwd = rsa_vault_decrypt(self.pri_key, self.userid)
+        aes_encrypt(self.vault, passwd)
 
     def unlock_vault(self):
         passwd = rsa_vault_decrypt(self.pri_key, self.userid)
-        self.unlocked = aes_vault_decrypt(self.vault, passwd)
+        unlocked = aes_decrypt(self.vault, passwd)
 
-        return self.unlocked
+        return unlocked
+
+
+# Done
+def back_to_main():
+    widget.setCurrentIndex(widget.currentIndex()-1)
 
 
 def exit_handler():

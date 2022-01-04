@@ -49,7 +49,7 @@ def create_cybervault(username, vault):
         return True
 
 
-def add_user(username, pub_key, key, vault_location):
+def add_user(username, pub_key, vault_location, key=None):
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     conn.execute("PRAGMA foreign_keys = ON")

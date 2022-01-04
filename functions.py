@@ -6,7 +6,7 @@ import string
 import hashlib
 import requests
 import zipfile
-import pyperclip
+import pyperclip3
 from pathlib import Path
 from Crypto import Random
 from Crypto.PublicKey import RSA
@@ -22,7 +22,7 @@ if os.name == 'nt':
 # Done
 def clipboard_wipe(enabled=False, delay=5):
     while enabled:
-        pyperclip.copy("")
+        pyperclip3.copy("")
         time.sleep(delay)
 
 
@@ -43,8 +43,8 @@ def generate_keys():
 
 
 # Done
-def rsa_vault_encrypt(public_key, password, vault=None):
-    data = password
+def rsa_vault_encrypt(public_key, password):
+    data = password.encode('utf-8')
     key = RSA.import_key(public_key)
     session_key = get_random_bytes(32)
 
@@ -68,7 +68,6 @@ def rsa_vault_decrypt(private_key, userid):
     else:
         key = RSA.import_key(private_key)
 
-
     # Decrypt session key with private key.
     cipher_rsa = PKCS1_OAEP.new(key)
     session_key = cipher_rsa.decrypt(esk)
@@ -80,57 +79,47 @@ def rsa_vault_decrypt(private_key, userid):
 
 
 # Done
-def aes_vault_encrypt(filename, key):
-    key = pad(key, AES.block_size)
+def aes_encrypt(filename, key):
+    pass_key = pad(key.encode('UTF-8'), AES.block_size)
+    with open(filename, 'rb') as vault:
+        data = vault.read()
+        cipher = AES.new(pass_key, AES.MODE_CFB)
+        ciphertext = cipher.encrypt(pad(data, AES.block_size))
+        iv = base64.b64encode(cipher.iv).decode("UTF-8")
+        ciphertext = base64.b64encode(ciphertext).decode("UTF-8")
+        vault.close()
 
-    try:
-        # Open and encrypt vault data
-        with open(filename, 'rb') as vault:
-            data = vault.read()
-            cipher = AES.new(key, AES.MODE_CFB)
-            ciphertext = cipher.encrypt(pad(data, AES.block_size))
-            iv = base64.b64encode(cipher.iv).decode("UTF-8")
-            ciphertext = base64.b64encode(ciphertext).decode("UTF-8")
-            vault.close()
-
-        # Write encrypted vault data back to same file.
-        with open(filename, 'w') as data:
-            data.write(iv + ciphertext)
-        data.close()
-        return True
-
-    except (ValueError, KeyError):
-        return False
-
+    # Write encrypted vault data back to same file.
+    with open(filename, 'w') as enc_vault:
+        enc_vault.write(iv + ciphertext)
+    enc_vault.close()
 
 
 # Done
-def aes_vault_decrypt(filename, key):
-    key = key.encode("UTF-8")
-    key = pad(key, AES.block_size)
+def aes_decrypt(filename, key):
+    pass_key = pad(key.encode("UTF-8"), AES.block_size)
 
-    with open(filename, 'r') as vault_data:
-        try:
-            data = vault_data.read()
-            length = len(data)
-            iv = data[:24]
-            iv = base64.b64decode(iv)
-            ciphertext = data[24:length]
-            ciphertext = base64.b64decode(ciphertext)
+    with open(filename, 'rb') as enc_vault:
+        data = enc_vault.read()
+        length = len(data)
+        iv = data[:24]
+        iv = base64.b64decode(iv)
+        ciphertext = data[24:length]
+        ciphertext = base64.b64decode(ciphertext)
 
-            cipher = AES.new(key, AES.MODE_CFB, iv)
-            decrypted = cipher.decrypt(ciphertext)
+        cipher = AES.new(pass_key, AES.MODE_CFB, iv)
+        decrypted = cipher.decrypt(ciphertext)
+        enc_vault.close()
 
-            decrypted = unpad(decrypted, AES.block_size)
-            with open(filename, 'wb') as vault:
-                vault.write(decrypted)
-            return True
+    with open(filename, 'wb') as vault:
+        vault.write(decrypted)
 
-        except (ValueError, KeyError):
-            return False
+        vault.close()
+
+    return True
 
 
-
+# Done
 # Create registry key to store password used to encrypt vault_users.cdbv file.
 def create_vault_key():
     with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_CONFIG) as hkey:
@@ -147,6 +136,7 @@ def create_vault_key():
     hkey.Close()
 
 
+# Done
 def vault_password():
     pass_list = ""
     password = ""
@@ -162,6 +152,7 @@ def vault_password():
     return password
 
 
+ # Done
 def get_reg_key():
     user_db_code = None
     with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_CONFIG) as hkey:
@@ -184,29 +175,13 @@ def get_reg_key():
 def user_db_enc(file, key):
     vkey = base64.b64decode(key)
     vkey = vkey.decode("UTF-8")
-    aes_vault_encryption(file, vkey)
+    aes_encrypt(file, vkey)
 
 
 def user_db_dec(file, key):
     vkey = base64.b64decode(key)
     vkey = vkey.decode("UTF-8")
-    ase_vault_decryption(file, vkey)
-
-
-def vault_password():
-    pass_list = ""
-    password = ""
-
-    pass_list += string.ascii_lowercase
-    pass_list += string.ascii_uppercase
-    pass_list += string.digits
-    pass_list += string.punctuation
-
-    for _ in range(1):
-        # Human Readable password
-        password = "".join(random.choices(pass_list, k=25))
-        password = password.encode("utf-8")
-    return password
+    aes_decrypt(file, vkey)
 
 
 def generate_password(upper, lower, digit, special, pass_label, length):
@@ -235,6 +210,7 @@ This parameter is what sets the complexity of the password (weak, strong, very).
     pass_label.set(password)
 
 
+# Done
 def pwn_checker(password):
     # Add in function to check a single password or a complete list of passwords.
     sha_password = hashlib.sha1(password.encode()).hexdigest()
