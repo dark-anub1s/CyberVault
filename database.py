@@ -1,10 +1,10 @@
 import os
 import sqlite3
-from pathlib import Path
 
 
+# Done
 # Create the main users database
-def create_db(backup=False, file_path=None): # backup_path=None
+def create_db(backup=False, file_path=None):
     if backup:
         backup_file = os.path.join(file_path, 'backup.db')
         conn = sqlite3.connect(backup_file)
@@ -29,6 +29,7 @@ def create_db(backup=False, file_path=None): # backup_path=None
     conn.close()
 
 
+# Done
 # Function takes a username, public key, and,
 # vault file name, and an otp secret key if one is provided.
 def create_cybervault(username, vault):
@@ -54,7 +55,9 @@ def create_cybervault(username, vault):
         return True
 
 
+# Done
 def add_user(username, pub_key, vault_location, key=None, backup=False, file_path=None):
+    pkey = pub_key.decode('utf-8')
     if backup:
         backup_file = os.path.join(file_path, 'backup.db')
         conn = sqlite3.connect(backup_file)
@@ -65,13 +68,13 @@ def add_user(username, pub_key, vault_location, key=None, backup=False, file_pat
     conn.commit()
 
     if key is not None:
-        entities = [username, pub_key, vault_location, key]
+        entities = [username, pkey, vault_location, key]
         cursor.execute("""
         INSERT INTO users("username", "public_key", "vault_location", "otp_key") VALUES(?, ?, ?, ?)
         """, entities)
 
     else:
-        entities = [username, pub_key, vault_location]
+        entities = [username, pkey, vault_location]
         cursor.execute("""
         INSERT INTO users("username", "public_key", "vault_location") VALUES(?, ?, ?)
         """, entities)
@@ -83,6 +86,7 @@ def add_user(username, pub_key, vault_location, key=None, backup=False, file_pat
     return last_id
 
 
+# Done
 def add_user_enc_data(userid, session_key, nonce, tag, ciphertext, backup=False, file_path=None):
     if backup:
         backup_file = os.path.join(file_path, 'backup.db')
@@ -102,13 +106,17 @@ def add_user_enc_data(userid, session_key, nonce, tag, ciphertext, backup=False,
     conn.close()
 
 
-def get_user_enc_data(userid):
+def get_user_enc_data(userid, backup=False, file_path=None):
     tag = None
     nonce = None
     session = None
     ciphertext = None
 
-    conn = sqlite3.connect('users.db')
+    if backup:
+        backup_file = os.path.join(file_path, 'backup.db')
+        conn = sqlite3.connect(backup_file)
+    else:
+        conn = sqlite3.connect('users.db')
     cursor = conn.cursor()  
     conn.execute("PRAGMA foreign_keys = ON")
     conn.commit()
@@ -126,14 +134,18 @@ def get_user_enc_data(userid):
     return session, nonce, tag, ciphertext
 
 
-def get_user(username):
+def get_user(username, backup=False, file_path=None):
     uid = None
     uname = None
     pkey = None
     vault_location = None
     otp_key = None
 
-    conn = sqlite3.connect('users.db')
+    if backup:
+        backup_file = os.path.join(file_path, 'backup.db')
+        conn = sqlite3.connect(backup_file)
+    else:
+        conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM users WHERE username=?", (username,))
@@ -144,7 +156,6 @@ def get_user(username):
         uid = row[0]
         uname = row[1]
         pkey = row[2]
-        pkey = pkey.decode('utf-8')
         vault_location = row[3]
         otp_key = row[4]
 
@@ -187,4 +198,3 @@ def check_passwd(vault, passwd):
             return True
 
     return True
-

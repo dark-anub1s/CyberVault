@@ -220,7 +220,112 @@ class OpenCyberVault(QDialog):
     def __init__(self):
         super(OpenCyberVault, self).__init__()
         loadUi("opencybervault.ui", self)
-        self.main_menu_button.clicked.connect(back_to_main)
+
+        self.tag = None
+        self.user = None
+        self.file = None
+        self.path = None
+        self.nonce = None
+        self.s_key = None
+        self.vault = None
+        self.save = None
+        self.pubkey = None
+        self.userid = None
+        self.username = None
+        self.temp_pub = None
+        self.mfa_check = None
+        self.ciphertext = None
+        self.session_key = None
+        self.backup_vault = None
+        self.home = Path.home()
+        self.start_location = os.getcwd()
+        self.home = os.path.join(self.home, "Documents")
+
+        # Setup buttons
+        self.open_btn.clicked.connect(self.open_archive)
+        self.browse_btn.clicked.connect(self.get_archive)
+
+    def load_user(self):
+        self.username = self.account_entry.text()
+        # Get user info from backup db
+        self.user, self.pubkey, self.vault, self.s_key, self.userid = get_user(self.username, backup=True, file_path=self.path.parent)
+        self.session_key, self.nonce, self.tag, self.ciphertext = get_user_enc_data(self.userid, backup=True, file_path=self.path.parent)
+
+        # Add recovered user to current db
+        uid = add_user(self.username, self.pubkey, self.vault, self.s_key)
+        add_user_enc_data(uid, self.session_key, self.nonce, self.tag, self.ciphertext)
+        os.rename(self.backup_vault, self.vault)
+        os.remove(self.file)
+        os.remove(os.path.join(self.path.parent, 'backup.db'))
+
+    # Done
+    def get_archive(self):
+        f_name = QFileDialog.getOpenFileName(self, "Open Vault", str(self.home), 'Backup Archive (*.zip)')
+        if f_name == ('', ''):
+            pass
+        else:
+            self.file = f_name[0]
+            if os.name == 'posix':
+                self.file = f"{f_name[0]}.zip"
+
+            self.path = Path(self.file)
+            self.backup_entry.setText(self.file)
+
+    def open_archive(self):
+        try:
+            with zipfile.ZipFile(self.file, 'r') as backup_archive:
+                archive = Path(self.file)
+                os.chdir(archive.parent)
+                for name in backup_archive.namelist():
+                    x = name.split('.')
+                    if x[1] == 'cvdb':
+                        self.backup_vault = os.path.join(archive.parent, name)
+                backup_archive.extractall()
+
+            os.chdir(self.start_location)
+
+        except AttributeError:
+            pass
+
+        self.load_user()
+
+    def show_popup(self):
+        msg = QMessageBox()
+
+        msg.setWindowTitle("Account Recovery")
+        msg.setText("Your account has been successfully recovered!")
+        msg.setIcon(QMessageBox.Information)
+        msg.setStandardButtons(QMessageBox.Ok)
+
+        msg.buttonClicked.connect(self.popup_button)
+
+        msg.exec_()
+
+    def popup_button(self, i):
+        if i.text() == 'OK':
+            # Clear and hide buttons and entry boxes
+            self.open_btn.hide()
+            self.backup_entry.clear()
+            self.open_btn.setEnabled(False)
+
+            # Clear data from all properties
+            self.tag = None
+            self.user = None
+            self.file = None
+            self.path = None
+            self.nonce = None
+            self.s_key = None
+            self.vault = None
+            self.save = None
+            self.pubkey = None
+            self.userid = None
+            self.username = None
+            self.temp_pub = None
+            self.mfa_check = None
+            self.ciphertext = None
+            self.session_key = None
+
+            back_to_main()
 
 
 class PasswordGenerator(QWidget):
@@ -698,6 +803,7 @@ class BackupAccount(QDialog):
         self.ciphertext = None
         self.session_key = None
         self.home = Path.home()
+        self.start_location = os.getcwd()
         self.home = os.path.join(self.home, "Documents")
 
         # Setup buttons
@@ -768,10 +874,17 @@ class BackupAccount(QDialog):
     def backup_vault(self):
         backup_db = os.path.join(self.path.parent, 'backup.db')
         with zipfile.ZipFile(self.file, 'w') as backup_archive:
-            backup_archive.write(self.vault)
-            backup_archive.write(backup_db)
+            vault_path = Path(self.vault)
+            path = vault_path.parent
+            os.chdir(path)
+            file = os.path.basename(self.vault)
+            backup_archive.write(file)
+            os.chdir(self.path.parent)
+            file2 = os.path.basename(backup_db)
+            backup_archive.write(file2)
 
         os.remove(backup_db)
+        os.chdir(self.start_location)
         self.show_popup()
 
     def show_popup(self):

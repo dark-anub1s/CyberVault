@@ -45,6 +45,9 @@
      <bold>true</bold>
     </font>
    </property>
+   <property name="frameShape">
+    <enum>QFrame::Box</enum>
+   </property>
    <property name="text">
     <string>Backup Your Account</string>
    </property>
@@ -69,8 +72,11 @@
      <bold>true</bold>
     </font>
    </property>
+   <property name="frameShape">
+    <enum>QFrame::Box</enum>
+   </property>
    <property name="text">
-    <string>Here you can backup your entire account into a single zip file. Note: Your Private Key WILL NOT be saved in this zip file, you must move your key to a secure location if you are moving your account to a new computer. The system will backup your vault, and account info from the users database, along with anything needed to unlock your account other then the private key.</string>
+    <string>Here you can backup your entire account into a single zip file. Note: Your Private Key WILL NOT be saved in this zip file, you must move your key to a secure location if you are moving your account to a new computer. The system will backup your vault, and account info.</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -82,11 +88,11 @@
      <x>10</x>
      <y>230</y>
      <width>960</width>
-     <height>5</height>
+     <height>10</height>
     </rect>
    </property>
    <property name="frameShadow">
-    <enum>QFrame::Raised</enum>
+    <enum>QFrame::Plain</enum>
    </property>
    <property name="lineWidth">
     <number>5</number>
@@ -326,6 +332,25 @@
    </property>
    <property name="text">
     <string>Browse</string>
+   </property>
+  </widget>
+  <widget class="Line" name="line_2">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>460</y>
+     <width>960</width>
+     <height>10</height>
+    </rect>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Plain</enum>
+   </property>
+   <property name="lineWidth">
+    <number>5</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
    </property>
   </widget>
  </widget>
