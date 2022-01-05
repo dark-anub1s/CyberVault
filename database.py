@@ -1,10 +1,15 @@
 import os
 import sqlite3
+from pathlib import Path
 
 
 # Create the main users database
-def create_db():
-    conn = sqlite3.connect('users.db')
+def create_db(backup=False, file_path=None): # backup_path=None
+    if backup:
+        backup_file = os.path.join(file_path, 'backup.db')
+        conn = sqlite3.connect(backup_file)
+    else:
+        conn = sqlite3.connect('users.db')
     conn.execute("PRAGMA foreign_keys = ON")
     conn.commit()
     cur = conn.cursor()
@@ -49,8 +54,12 @@ def create_cybervault(username, vault):
         return True
 
 
-def add_user(username, pub_key, vault_location, key=None):
-    conn = sqlite3.connect('users.db')
+def add_user(username, pub_key, vault_location, key=None, backup=False, file_path=None):
+    if backup:
+        backup_file = os.path.join(file_path, 'backup.db')
+        conn = sqlite3.connect(backup_file)
+    else:
+        conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
     conn.execute("PRAGMA foreign_keys = ON")
     conn.commit()
@@ -74,8 +83,12 @@ def add_user(username, pub_key, vault_location, key=None):
     return last_id
 
 
-def add_user_enc_data(userid, session_key, nonce, tag, ciphertext):
-    conn = sqlite3.connect('users.db')
+def add_user_enc_data(userid, session_key, nonce, tag, ciphertext, backup=False, file_path=None):
+    if backup:
+        backup_file = os.path.join(file_path, 'backup.db')
+        conn = sqlite3.connect(backup_file)
+    else:
+        conn = sqlite3.connect('users.db')
     cursor = conn.cursor()  
     conn.execute("PRAGMA foreign_keys = ON")
     conn.commit()
@@ -174,3 +187,4 @@ def check_passwd(vault, passwd):
             return True
 
     return True
+

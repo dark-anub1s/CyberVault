@@ -3,6 +3,7 @@ import os
 import sys
 import qrcode
 import sqlite3
+import zipfile
 from pathlib import Path
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -10,10 +11,11 @@ from PyQt5.uic import loadUi
 from PIL.ImageQt import ImageQt
 from pyotp import random_base32, TOTP
 from PyQt5.QtGui import QPixmap, QFont, QBrush, QColor
-from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_copy
+from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_copy, check_rsa
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
 from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, check_passwd
 from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, generate_password
+from database import get_user_enc_data
 
 
 # Done
@@ -25,6 +27,7 @@ class UI(QMainWindow):
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
         self.login_to_account.clicked.connect(self.login)
+        self.backup_btn.clicked.connect(self.backup_account)
 
     def create_account(self):
         newaccountwindow = NewUser()
@@ -39,6 +42,11 @@ class UI(QMainWindow):
     def open_vault(self):
         openvaultwindow = OpenCyberVault()
         widget.addWidget(openvaultwindow)
+        widget.setCurrentIndex(widget.currentIndex()+1)
+
+    def backup_account(self):
+        account_backup = BackupAccount()
+        widget.addWidget(account_backup)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
 
@@ -196,7 +204,7 @@ class Login(QDialog):
     def verify_login(self):
         code = self.auth_code_entry.text()
         self.mfa_check = QRCodeGenerator(self.otp_s_key, login=True, current_code=code)
-        self.mfa_check.verifyotp()
+        self.mfa_check.verify()
 
         result = self.mfa_check.get_verify()
         if result:
@@ -282,7 +290,7 @@ class QRCodeGenerator(QWidget):
         self.current = current_code
         self.login_to_account = login
         self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.verify_btn.clicked.connect(self.verify_otp)
+        self.verify_btn.clicked.connect(self.verify)
 
         if not self.login_to_account:
             self.auth = auth_string
@@ -291,7 +299,7 @@ class QRCodeGenerator(QWidget):
             pix = QPixmap.fromImage(self.qr)
             self.qrcode_label.setPixmap(pix)
 
-    def verify_otp(self):
+    def verify(self):
         mfa_totp = TOTP(self.s_key)
         if not self.login_to_account:
             self.current = self.otp_entry.text()
@@ -668,10 +676,148 @@ class PasswordChecker(QDialog):
         self.index_list.clear()
 
 
+# Done
 class BackupAccount(QDialog):
     def __init__(self):
         super(BackupAccount, self).__init__()
         loadUi("backupaccount.ui", self)
+
+        self.tag = None
+        self.user = None
+        self.file = None
+        self.path = None
+        self.nonce = None
+        self.s_key = None
+        self.vault = None
+        self.save = None
+        self.pubkey = None
+        self.userid = None
+        self.username = None
+        self.temp_pub = None
+        self.mfa_check = None
+        self.ciphertext = None
+        self.session_key = None
+        self.home = Path.home()
+        self.home = os.path.join(self.home, "Documents")
+
+        # Setup buttons
+        self.mfa_verify_btn.clicked.connect(self.mfa)
+        self.save_btn.clicked.connect(self.backup_vault)
+        self.browse_btn.clicked.connect(self.save_archive)
+        self.load_rsa_key_btn.clicked.connect(self.load_rsa)
+
+        # Hide and disable buttons that are not needed right away.
+        self.save_btn.hide()
+        self.mfa_entry.hide()
+        self.mfa_verify_btn.hide()
+        self.save_btn.setEnabled(False)
+        self.mfa_verify_btn.setEnabled(False)
+
+    def load_rsa(self):
+        f_name = QFileDialog.getOpenFileName(self, 'Load RSA Key', str(self.home), 'Key File (*.pem)')
+        self.load_rsa_key_entry.setText(f_name[0])
+        if self.load_rsa_key_entry.text():
+            self.temp_pub = check_rsa(f_name[0])
+        self.save_user()
+
+    def save_user(self):
+        self.username = self.account_user_entry.text()
+        if self.username:
+            self.user, self.pubkey, self.vault, self.s_key, self.userid = get_user(self.username)
+            if self.temp_pub == self.pubkey:
+                self.mfa_entry.show()
+                self.mfa_verify_btn.show()
+                self.mfa_verify_btn.setEnabled(True)
+                if self.userid:
+                    self.session_key, self.nonce, self.tag, self.ciphertext = get_user_enc_data(self.userid)
+                    create_db(backup=True, file_path=self.path.parent)
+                    uid = add_user(self.username, self.pubkey, self.vault, self.s_key, backup=True, file_path=self.path.parent)
+                    add_user_enc_data(uid, self.session_key, self.nonce, self.tag, self.ciphertext, backup=True,
+                                      file_path=self.path.parent)
+
+                else:
+                    pass
+            else:
+                pass
+        else:
+            pass
+
+    def mfa(self):
+        code = self.mfa_entry.text()
+        if code:
+            self.mfa_check = QRCodeGenerator(self.s_key, login=True, current_code=code)
+            self.mfa_check.verify()
+
+        result = self.mfa_check.get_verify()
+        if result:
+            self.save_btn.show()
+            self.save_btn.setEnabled(True)
+
+    def save_archive(self):
+        f_name = QFileDialog.getSaveFileName(self, "Save Vault", str(self.home), 'Backup Archive (*.zip)')
+        if f_name == ('', ''):
+            pass
+        else:
+            self.file = f_name[0]
+            if os.name == 'posix':
+                self.file = f"{f_name[0]}.zip"
+
+            self.path = Path(self.file)
+            self.backup_entry.setText(self.file)
+
+    def backup_vault(self):
+        backup_db = os.path.join(self.path.parent, 'backup.db')
+        with zipfile.ZipFile(self.file, 'w') as backup_archive:
+            backup_archive.write(self.vault)
+            backup_archive.write(backup_db)
+
+        os.remove(backup_db)
+        self.show_popup()
+
+    def show_popup(self):
+        msg = QMessageBox()
+
+        msg.setWindowTitle("Account Backed up")
+        msg.setText("""Your account has been successfully backed up! Please keep it somewhere safe and never store
+it in the same location as your private key!""")
+        msg.setIcon(QMessageBox.Information)
+        msg.setStandardButtons(QMessageBox.Ok)
+
+        msg.buttonClicked.connect(self.popup_button)
+
+        msg.exec_()
+
+    def popup_button(self, i):
+        if i.text() == 'OK':
+            # Clear and hide buttons and entry boxes
+            self.save_btn.hide()
+            self.mfa_entry.hide()
+            self.mfa_entry.clear()
+            self.backup_entry.clear()
+            self.mfa_verify_btn.hide()
+            self.load_rsa_key_entry.clear()
+            self.account_user_entry.clear()
+            self.save_btn.setEnabled(False)
+            self.mfa_verify_btn.setEnabled(False)
+
+            # Clear data from all properties
+            self.tag = None
+            self.user = None
+            self.file = None
+            self.path = None
+            self.nonce = None
+            self.s_key = None
+            self.vault = None
+            self.save = None
+            self.pubkey = None
+            self.userid = None
+            self.username = None
+            self.temp_pub = None
+            self.mfa_check = None
+            self.ciphertext = None
+            self.session_key = None
+
+            back_to_main()
 
 
 class User:

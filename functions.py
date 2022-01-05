@@ -43,6 +43,15 @@ def generate_keys():
     return private_key,  public_key
 
 
+def check_rsa(private_key):
+    with open(private_key, 'r') as pri_key:
+        key = RSA.import_key(pri_key.read())
+        temp = key.public_key()
+        temp = temp.export_key()
+
+    return temp.decode('utf-8')
+
+
 # Done
 def rsa_vault_encrypt(public_key, password):
     data = password.encode('utf-8')
