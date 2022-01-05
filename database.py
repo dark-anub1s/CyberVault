@@ -1,6 +1,5 @@
 import os
 import sqlite3
-from PyQt5.QtWidgets import QMessageBox
 
 
 # Create the main users database
@@ -19,7 +18,8 @@ def create_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS data
-    (userid INTEGER PRIMARY KEY, session_key BLOB, nonce BLOB, tag BLOB, ciphertext BLOB, FOREIGN KEY(userid) REFERENCES users(id))""")
+    (userid INTEGER PRIMARY KEY, session_key BLOB, nonce BLOB, tag BLOB, ciphertext BLOB, FOREIGN KEY(userid) 
+    REFERENCES users(id))""")
     conn.commit()
     conn.close()
 
@@ -90,6 +90,11 @@ def add_user_enc_data(userid, session_key, nonce, tag, ciphertext):
 
 
 def get_user_enc_data(userid):
+    tag = None
+    nonce = None
+    session = None
+    ciphertext = None
+
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()  
     conn.execute("PRAGMA foreign_keys = ON")
@@ -109,6 +114,7 @@ def get_user_enc_data(userid):
 
 
 def get_user(username):
+    uid = None
     uname = None
     pkey = None
     vault_location = None
@@ -134,6 +140,7 @@ def get_user(username):
     else:
         return
 
+
 def add_entry(vault, entryname, url, user, passwd):
     conn = sqlite3.connect(vault)
     cursor = conn.cursor()
@@ -150,5 +157,20 @@ def add_entry(vault, entryname, url, user, passwd):
 
     conn.commit()
     conn.close()
+
+
+def check_passwd(vault, passwd):
+    conn = sqlite3.connect(vault)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM cybervault WHERE password=?", (passwd,))
+
+    rows = cursor.fetchall()
+
+    for row in rows:
+        if row[4] == passwd:
+            return False
+        else:
+            return True
 
     return True

@@ -12,7 +12,7 @@ from pyotp import random_base32, TOTP
 from PyQt5.QtGui import QPixmap, QFont, QBrush, QColor
 from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_copy
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
-from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user
+from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, check_passwd
 from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, generate_password
 
 
@@ -324,6 +324,7 @@ class PasswordVault(QDialog):
         self.pri_key = pri_key
         self.vault_user = None
         self.vault_locked = True
+        self.add_to_db = None
         self.username = username
         self.pass_checker = None
         self.vault_unlocked = False
@@ -528,8 +529,11 @@ class PasswordVault(QDialog):
 
     # Done
     def submit_entry(self):
-        result = add_entry(self.vault_path, self.entry_name, self.web_url, self.username, self.passwd)
-        if result:
+        self.add_to_db = check_passwd(self.vault_path, self.passwd)
+
+        if self.add_to_db:
+            add_entry(self.vault_path, self.entry_name, self.web_url, self.username, self.passwd)
+
             self.name_entry.clear()
             self.web_url_entry.clear()
             self.user_entry.clear()
@@ -538,6 +542,10 @@ class PasswordVault(QDialog):
             self.submit_btn.hide()
 
             self.load_list()
+            self.add_to_db = False
+        else:
+            self.show_popup()
+            self.add_to_db = False
 
     def copy_pass(self):
         request = self.account_table.currentItem()
@@ -551,10 +559,29 @@ class PasswordVault(QDialog):
         self.passwd_generator.show()
         
     def check_pass(self):
-        if self.pass_checker == None:
+        if not self.pass_checker:
             self.pass_checker = PasswordChecker(self.vault_path)
 
         self.pass_checker.show()
+
+    def show_popup(self):
+        msg = QMessageBox()
+
+        msg.setWindowTitle("Password not Unique")
+        msg.setText("All passwords entered into the CyberVault need to be unique, please use a different password!")
+        msg.setIcon(QMessageBox.Critical)
+        msg.setStandardButtons(QMessageBox.Ok)
+
+        msg.buttonClicked.connect(self.popup_button)
+
+        msg.exec_()
+
+    def popup_button(self, i):
+        if i.text() == 'OK':
+            # Clean up the window to prevent users from clicking the submit button over and over with a bad password.
+            self.submit_btn.hide()
+            self.password_entry.clear()
+            self.submit_btn.setEnabled(False)
 
 
 # Done
@@ -647,7 +674,7 @@ class BackupAccount(QDialog):
         loadUi("backupaccount.ui", self)
 
 
-class User():
+class User:
     def __init__(self, prikey, pubkey, s_key, vault, userid):
         self.s_key = s_key
         self.userid = userid
