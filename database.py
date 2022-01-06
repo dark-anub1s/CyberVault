@@ -44,7 +44,7 @@ def create_cybervault(username, vault):
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS cybervault
-        (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, website_url TEXT,
+        (vid INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, website_url TEXT,
         username TEXT, password TEXT UNIQUE)
         """)
         success = True
@@ -189,12 +189,7 @@ def check_passwd(vault, passwd):
 
     cursor.execute("SELECT * FROM cybervault WHERE password=?", (passwd,))
 
-    rows = cursor.fetchall()
-
-    for row in rows:
-        if row[4] == passwd:
-            return False
-        else:
-            return True
-
-    return True
+    if cursor.fetchone():
+        return 'yes'
+    else:
+        return 'no'

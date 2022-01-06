@@ -224,7 +224,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Enter Authenticator Code: </string>
+    <string>Authenticator Code: </string>
    </property>
   </widget>
   <widget class="QLineEdit" name="code_entry">

@@ -256,4 +256,3 @@ def backup_account(save_location):
 
     backup.write()
     backup.close()
-
