@@ -55,16 +55,24 @@ class NewUser(QDialog):
     def __init__(self):
         super(NewUser, self).__init__()
         loadUi("newaccount.ui", self)
+        self.img = None
+        self.qr = None
         self.uname = None
         self.home = Path.home()
         self.vault_state = None
-        self.qrcodewindow = None
+        self.qrcode = None
         self.vault_passwd = None
         self.home = os.path.join(self.home, "Documents")
 
-        # Setting up on screen options
-        self.checked = None
-        self.enableMFA.stateChanged.connect(self.enable_mfa)
+        # Setting up onscreen options
+        self.auth_code_lable.hide()
+        self.code_entry.hide()
+        self.verify_code_btn.hide()
+        self.create_account_button.hide()
+        self.code_entry.setEnabled(False)
+        self.verify_code_btn.setEnabled(False)
+        self.create_account_button.setEnabled(False)
+        self.verify_mfa_btn.clicked.connect(self.setup_mfa)
         self.create_account_button.clicked.connect(self.create_account)
 
         # Setting up key variables
@@ -74,20 +82,35 @@ class NewUser(QDialog):
         self.pub_key = None
         self.account = False
 
-    def enable_mfa(self):
+    def setup_mfa(self):
         self.uname = self.username.text()
-        self.checked = self.enableMFA.isChecked()
         self.s_key = random_base32()
         totp = TOTP(self.s_key)
         auth = totp.provisioning_uri(name=self.uname, issuer_name='CyberVault')
 
-        if self.qrcodewindow is None:
-            self.qrcodewindow = QRCodeGenerator(self.s_key, auth)
+        if self.qrcode is None:
+            self.img = qrcode.make(auth)
+            self.qr = ImageQt(self.img)
+            pix = QPixmap.fromImage(self.qr)
+            self.qrcode_label.setPixmap(pix)
 
-        self.qrcodewindow.show()
+            self.auth_code_lable.show()
+            self.code_entry.show()
+            self.verify_code_btn.show()
+            self.code_entry.setEnabled(True)
+            self.verify_code_btn.setEnabled(True)
+            self.verify_code_btn.clicked.connect(self.verify_mfa)
+
+    def verify_mfa(self):
+        code = self.code_entry.text()
+        self.qrcode = QRCodeGenerator(self.s_key, code)
+        self.qrcode.verify()
+
+        if self.qrcode.get_verify():
+            self.create_account_button.show()
+            self.create_account_button.setEnabled(True)
 
     def create_account(self):
-        # Remove option to not have 2FA, once program is 100% functional.
         userid = None
         self.uname = self.username.text()
 
@@ -97,19 +120,14 @@ class NewUser(QDialog):
         self.vault_passwd = vault_password()
 
         result = create_cybervault(self.uname, self.vault)
-        if self.checked:
-            # Create account in database and make password vault with MFA
-            if result:
-                self.account = True
-                userid = add_user(self.uname, self.pub_key, self.vault, self.s_key)
-
-        else:
-            if result:
-                self.account = True
-                userid = add_user(self.uname, self.pub_key, self.vault)
+        # Create account in database and make password vault with MFA
+        if result:
+            self.account = True
+            userid = add_user(self.uname, self.pub_key, self.vault, self.s_key)
 
         session, nonce, tag, ciphertext = rsa_vault_encrypt(self.pub_key, self.vault_passwd)
-        if userid: add_user_enc_data(userid, session, nonce, tag, ciphertext)
+        if userid:
+            add_user_enc_data(userid, session, nonce, tag, ciphertext)
 
         if self.account:
             self.open_vault()
@@ -203,7 +221,7 @@ class Login(QDialog):
 
     def verify_login(self):
         code = self.auth_code_entry.text()
-        self.mfa_check = QRCodeGenerator(self.otp_s_key, login=True, current_code=code)
+        self.mfa_check = QRCodeGenerator(self.otp_s_key, code)
         self.mfa_check.verify()
 
         result = self.mfa_check.get_verify()
@@ -386,36 +404,29 @@ class PasswordGenerator(QWidget):
 
 
 # Done
-class QRCodeGenerator(QWidget):
-    def __init__(self, s_key, auth_string=None, login=False, current_code=None):
-        super(QRCodeGenerator, self).__init__()
-        loadUi("qrpopup.ui", self)
-        self.verified = None
+class QRCodeGenerator(): # QWidget
+    def __init__(self, s_key, code):
+        # super(QRCodeGenerator, self).__init__()
+        # loadUi("qrpopup.ui", self)
         self.s_key = s_key
-        self.current = current_code
-        self.login_to_account = login
-        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-        self.verify_btn.clicked.connect(self.verify)
+        self.current = code
+        self.verified = None
 
-        if not self.login_to_account:
-            self.auth = auth_string
-            self.img = qrcode.make(self.auth)
-            self.qr = ImageQt(self.img)
-            pix = QPixmap.fromImage(self.qr)
-            self.qrcode_label.setPixmap(pix)
+        # self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
+        # self.verify_btn.clicked.connect(self.verify)
+
+        # if not self.login_to_account:
+        #     self.auth = auth_string
+        #     self.img = qrcode.make(self.auth)
+        #     self.qr = ImageQt(self.img)
+        #     pix = QPixmap.fromImage(self.qr)
+        #     self.qrcode_label.setPixmap(pix)
 
     def verify(self):
         mfa_totp = TOTP(self.s_key)
-        if not self.login_to_account:
-            self.current = self.otp_entry.text()
-        else:
-            pass
 
         if mfa_totp.verify(self.current):
-            if self.login_to_account:
-                self.verified = True
-
-            self.close()
+            self.verified = True
 
     def get_verify(self):
         return self.verified
