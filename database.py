@@ -57,7 +57,11 @@ def create_cybervault(username, vault):
 
 # Done
 def add_user(username, pub_key, vault_location, key=None, backup=False, file_path=None):
-    pkey = pub_key.decode('utf-8')
+    if backup:
+        pkey = pub_key
+    else:
+        pkey = pub_key.decode('utf-8')
+
     if backup:
         backup_file = os.path.join(file_path, 'backup.db')
         conn = sqlite3.connect(backup_file)
@@ -106,6 +110,7 @@ def add_user_enc_data(userid, session_key, nonce, tag, ciphertext, backup=False,
     conn.close()
 
 
+# Done
 def get_user_enc_data(userid, backup=False, file_path=None):
     tag = None
     nonce = None
@@ -134,6 +139,7 @@ def get_user_enc_data(userid, backup=False, file_path=None):
     return session, nonce, tag, ciphertext
 
 
+# Done
 def get_user(username, backup=False, file_path=None):
     uid = None
     uname = None
@@ -165,6 +171,7 @@ def get_user(username, backup=False, file_path=None):
         return
 
 
+# Done
 def add_entry(vault, entryname, url, user, passwd):
     conn = sqlite3.connect(vault)
     cursor = conn.cursor()
@@ -183,6 +190,7 @@ def add_entry(vault, entryname, url, user, passwd):
     conn.close()
 
 
+# Done
 def check_passwd(vault, passwd):
     conn = sqlite3.connect(vault)
     cursor = conn.cursor()
@@ -190,6 +198,32 @@ def check_passwd(vault, passwd):
     cursor.execute("SELECT * FROM cybervault WHERE password=?", (passwd,))
 
     if cursor.fetchone():
+        return 'yes'
+    else:
+        return 'no'
+
+
+# Done
+def check_user(username):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE username=?", (username,))
+
+    if cursor.fetchone():
+        return 'yes'
+    else:
+        return 'no'
+
+
+# Done
+def check_vault(vault_location):
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE vault_location=?", (vault_location,))
+
+    if cursor.fetchall():
         return 'yes'
     else:
         return 'no'

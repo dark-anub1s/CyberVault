@@ -6,6 +6,7 @@ import qrcode
 import sqlite3
 import zipfile
 from pathlib import Path
+from elevate import elevate
 from PyQt5 import QtWidgets
 from PyQt5.uic import loadUi
 from PIL.ImageQt import ImageQt
@@ -15,7 +16,8 @@ from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
 from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, check_passwd
 from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, generate_password
-from database import get_user_enc_data
+from functions import get_reg_flag, get_reg_key, user_db_enc, user_db_dec, create_vault_key
+from database import get_user_enc_data, check_user, check_vault
 
 
 # Done
@@ -23,7 +25,6 @@ class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
         loadUi("cybervault.ui", self)
-        create_db()
         self.vault_user = User()
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
@@ -66,8 +67,11 @@ class NewUser(QDialog):
         self.home = Path.home()
         self.vault_state = None
         self.qrcode = None
+        self.v_passwd = None
+        self.user_check = None
         self.vault_passwd = None
         self.vault_account = user
+        self.vault_check = None
         self.home = os.path.join(self.home, "Documents")
 
         # Setting up onscreen options
@@ -78,8 +82,8 @@ class NewUser(QDialog):
         self.code_entry.setEnabled(False)
         self.verify_code_btn.setEnabled(False)
         self.create_account_button.setEnabled(False)
-        self.verify_mfa_btn.clicked.connect(self.setup_mfa)
-        self.create_account_button.clicked.connect(self.create_account)
+        self.verify_mfa_btn.clicked.connect(self.get_username)
+        self.create_account_button.clicked.connect(self.get_info)
 
         # Setting up key variables
         self.vault = None
@@ -120,15 +124,24 @@ class NewUser(QDialog):
             self.create_account_button.setEnabled(True)
 
     # Done
-    def create_account(self):
-        userid = None
+    def get_username(self):
         self.uname = self.username.text()
 
-        self.pri_key, self.pub_key = generate_keys()
-        self.vault_account.pri_key = self.pri_key
-        self.vault_account.pub_key = self.pub_key
-        self.save_key()
-        self.get_vault_name()
+        self.v_passwd = get_reg_key()
+        try:
+            user_db_dec('users.db', self.v_passwd)
+        except:
+            pass
+
+        # Check username
+        if self.uname:
+            self.user_check = check_user(self.uname)
+            self.check_username()
+
+    # Done
+    def create_account(self):
+        userid = None
+
         self.vault_passwd = vault_password()
 
         result = create_cybervault(self.uname, self.vault)
@@ -144,6 +157,14 @@ class NewUser(QDialog):
 
         if self.account:
             self.open_vault()
+
+    # Done
+    def get_info(self):
+        self.pri_key, self.pub_key = generate_keys()
+        self.vault_account.pri_key = self.pri_key
+        self.vault_account.pub_key = self.pub_key
+        self.save_key()
+        self.get_vault_name()
 
     # Done
     def save_key(self):
@@ -166,18 +187,72 @@ class NewUser(QDialog):
         if vault == ('', ''):
             pass
         else:
-            self.vault = vault[0]
+            self.vault_check = check_vault(vault[0])
+            self.check_vault_name(vault[0])
 
-            if os.name == 'posix':
-                self.vault = f"{vault[0]}.cvdb"
+    # Done
+    def check_vault_name(self, vault):
+        if self.vault_check == 'no':
+            self.vault_check = None
+            self.set_vault_name(vault)
 
+            return
+
+        elif self.vault_check == 'yes':
+            self.vault_check = None
+            self.vault_popup()
+            return
+
+    # Done
+    def set_vault_name(self, vault):
+        self.vault = vault
+        if os.name == 'posix':
+            self.vault = f"{vault}.cvdb"
         self.vault_account.vault = self.vault
+        self.create_account()
 
     # Done
     def open_vault(self):
         passvault = PasswordVault(self.vault, self.uname, self.pri_key, self.vault_account, enc_vault=True)
         widget.addWidget(passvault)
         widget.setCurrentIndex(widget.currentIndex()+1)
+
+    # Done
+    def check_username(self):
+        if self.user_check == 'no':
+            self.user_check = None
+            self.setup_mfa()
+            return
+        elif self.user_check == 'yes':
+            self.user_check = None
+            self.user_popup()
+            return
+
+    # Done
+    def user_popup(self):
+        msg = QMessageBox()
+
+        msg.setWindowTitle("Username Already Taken")
+        msg.setText("That username has already been taken! Please pick a different username.")
+        msg.setIcon(QMessageBox.Critical)
+        msg.setStandardButtons(QMessageBox.Ok)
+
+        self.username.clear()
+
+        msg.exec_()
+
+    # Done
+    def vault_popup(self):
+        msg = QMessageBox()
+
+        msg.setWindowTitle("Vault Name Already Taken")
+        msg.setText("That vault name has already been taken! Please pick a different name or location.")
+        msg.setIcon(QMessageBox.Critical)
+        msg.setStandardButtons(QMessageBox.Ok)
+
+        msg.exec_()
+
+        self.get_vault_name()
 
 
 # Done
@@ -216,6 +291,8 @@ class Login(QDialog):
         self.pri_key = self.rsa_key_entry.text()
 
         if self.username:
+            v_passwd = get_reg_key()
+            user_db_dec('users.db', v_passwd)
             user, pub_key, self.vault, self.otp_s_key, userid = get_user(self.username)
             if self.temp == pub_key:
                 self.vault_account.s_key = self.otp_s_key
@@ -491,9 +568,6 @@ class PasswordVault(QDialog):
         self.passwd_generator = None
         self.vault_path = Path(vault)
 
-        # Get the required info for the current user
-        # self.get_user()
-
         # Hide all disabled buttons at start
         self.vault_lock(enc_vault)
 
@@ -600,11 +674,6 @@ class PasswordVault(QDialog):
         self.account_table.clear()
 
         clipboard_wipe()
-
-    # Done
-    def get_user(self):
-        user, pubkey, vault, s_key, userid = get_user(self.username)
-        # self.vault_user = User(self.pri_key, pubkey, s_key, vault, userid)
 
     # Done
     def load_list(self):
@@ -962,7 +1031,7 @@ class BackupAccount(QDialog):
     def mfa(self):
         code = self.mfa_entry.text()
         if code:
-            self.mfa_check = QRCodeGenerator(self.s_key, login=True, current_code=code)
+            self.mfa_check = QRCodeGenerator(self.s_key, code)
             self.mfa_check.verify()
 
         result = self.mfa_check.get_verify()
@@ -1064,30 +1133,50 @@ class User:
     def lock_vault(self):
         passwd = rsa_vault_decrypt(self.pri_key, self.userid)
         aes_encrypt(self.vault, passwd)
+        v_passwd = get_reg_key()
+        if v_passwd:
+            user_db_enc('users.db', v_passwd)
         self.locked = True
 
     def unlock_vault(self):
-        passwd = rsa_vault_decrypt(self.pri_key, self.userid)
-        unlocked = aes_decrypt(self.vault, passwd)
+        v_passwd = get_reg_key()
+        if v_passwd:
+            user_db_dec('users.db', v_passwd)
+            passwd = rsa_vault_decrypt(self.pri_key, self.userid)
+            self.unlocked = aes_decrypt(self.vault, passwd)
 
-        if unlocked:
+        if self.unlocked:
             self.locked = False
             self.unlocked = True
 
-        return unlocked
+        return self.unlocked
 
 
 # Done
 def back_to_main():
-    widget.setCurrentIndex(widget.currentIndex()-1)
+    widget.addWidget(mainwindow)
+    widget.setCurrentIndex(widget.currentIndex()+1)
 
 
 def exit_handler():
-    print("Exiting Now")
-    print(mainwindow.vault_user.locked)
+    print("Now Exiting")
+    if not mainwindow.vault_user.locked:
+        mainwindow.vault_user.lock_vault()
+
     sys.exit(0)
 
+
+def is_root():
+    return os.getuid() == 0
+
+
 if __name__ == '__main__':
+    if not get_reg_flag():
+        elevate(show_console=False)
+        create_vault_key()
+        create_db()
+        sys.exit(0)
+
     app = QApplication([])
     widget = QtWidgets.QStackedWidget()
     mainwindow = UI()

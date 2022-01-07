@@ -4,9 +4,7 @@ import random
 import string
 import hashlib
 import requests
-import zipfile
 import pyperclip3
-from pathlib import Path
 from Crypto import Random
 from Crypto.PublicKey import RSA
 from database import get_user_enc_data
@@ -23,11 +21,12 @@ def clipboard_wipe():
     pyperclip3.copy("")
 
 
+# Done
 def clipboard_copy(data):
     pyperclip3.copy(data)
 
 
-# Done
+# Done - When complete change modules_length to 4096
 def generate_keys():
     modules_length = 2048
 
@@ -41,15 +40,6 @@ def generate_keys():
 
     # return the keys
     return private_key,  public_key
-
-
-def check_rsa(private_key):
-    with open(private_key, 'r') as pri_key:
-        key = RSA.import_key(pri_key.read())
-        temp = key.public_key()
-        temp = temp.export_key()
-
-    return temp.decode('utf-8')
 
 
 # Done
@@ -86,6 +76,16 @@ def rsa_vault_decrypt(private_key, userid):
     data = cipher_aes.decrypt_and_verify(ctext, tag)
 
     return data.decode("utf-8")
+
+
+# Done
+def check_rsa(private_key):
+    with open(private_key, 'r') as pri_key:
+        key = RSA.import_key(pri_key.read())
+        temp = key.public_key()
+        temp = temp.export_key()
+
+    return temp.decode('utf-8')
 
 
 # Done
@@ -129,24 +129,7 @@ def aes_decrypt(filename, key):
     return True
 
 
-# Done
-# Create registry key to store password used to encrypt vault_users.cdbv file.
-def create_vault_key():
-    with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_CONFIG) as hkey:
-        with winreg.OpenKey(hkey, "SOFTWARE", 0, winreg.KEY_READ) as sub_key:
-            with winreg.CreateKeyEx(sub_key, "CyberVault", 0,
-                                    winreg.KEY_ALL_ACCESS) as vault_key:
-                password = vault_password()
-                password = password.encode("UTF-8")
-                to_save = base64.b64encode(password)
-                store = to_save.decode("UTF-8")
-                winreg.SetValueEx(vault_key, "Code", 0, winreg.REG_SZ, store)
-            vault_key.Close()
-        sub_key.Close()
-    hkey.Close()
-
-
-# Done
+# Done - Play with password size
 def vault_password():
     pass_list = ""
     password = ""
@@ -162,17 +145,35 @@ def vault_password():
     return password
 
 
- # Done
+# Done
+# Create registry key to store password used to encrypt users.db file.
+def create_vault_key():
+    with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_CONFIG) as hkey:
+        with winreg.OpenKey(hkey, "SOFTWARE", 0, winreg.KEY_READ) as sub_key:
+            with winreg.CreateKeyEx(sub_key, "CyberVault", 0,
+                                    winreg.KEY_ALL_ACCESS) as vault_key:
+                password = vault_password()
+                password = password.encode("UTF-8")
+                to_save = base64.b64encode(password)
+                store = to_save.decode("UTF-8")
+                winreg.SetValueEx(vault_key, "Code", 0, winreg.REG_SZ, store)
+                winreg.SetValueEx(vault_key, "Flag", 0, winreg.REG_SZ, 'True')
+            vault_key.Close()
+        sub_key.Close()
+    hkey.Close()
+
+
+# Done
 def get_reg_key():
     user_db_code = None
     with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_CONFIG) as hkey:
         with winreg.OpenKey(hkey, "SOFTWARE", 0, winreg.KEY_READ) as sub_key:
-            with winreg.CreateKeyEx(sub_key, "CyberVault", 0, winreg.KEY_READ) as vault_key:
+            with winreg.OpenKey(sub_key, "CyberVault", 0, winreg.KEY_READ) as vault_key:
                 try:
                     for x in range(100):
-                        key = winreg.EnumKey(sub_key, x)
-                        if key == 'CyberVault':
-                            user_db_code = winreg.EnumValue(vault_key, 0)[1]
+                        value = winreg.EnumValue(vault_key, x)
+                        if value[0] == 'Code':
+                            user_db_code = value[1]
 
                 except OSError:
                     pass
@@ -182,18 +183,42 @@ def get_reg_key():
         return user_db_code
 
 
+# Done
+def get_reg_flag():
+    with winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_CONFIG) as hkey:
+        with winreg.OpenKey(hkey, "SOFTWARE", 0, winreg.KEY_READ) as sub_key:
+            try:
+                with winreg.OpenKey(sub_key, "CyberVault", 0, winreg.KEY_READ) as vault_key:
+                    try:
+                        for x in range(2):
+                            value = winreg.EnumValue(vault_key, x)
+                            if value[0] == 'Flag' and value[1]:
+                                flag = True
+                    except OSError:
+                        pass
+            except FileNotFoundError:
+                return False
+            sub_key.Close()
+        hkey.Close()
+    if flag:
+        return True
+
+
+# Done
 def user_db_enc(file, key):
     vkey = base64.b64decode(key)
     vkey = vkey.decode("UTF-8")
     aes_encrypt(file, vkey)
 
 
+# Done
 def user_db_dec(file, key):
     vkey = base64.b64decode(key)
     vkey = vkey.decode("UTF-8")
-    aes_decrypt(file, vkey)
+    success = aes_decrypt(file, vkey)
 
 
+# Done
 def generate_password(upper, lower, digit, special, pass_label, length):
     """ Length will default to 0, this can be passed in on the call if you chose. strength is set by default to strong.
 This parameter is what sets the complexity of the password (weak, strong, very)."""
@@ -247,12 +272,3 @@ def pwn_checker(password):
         return True, pwned_dict[sha_postfix]
     else:
         return False, 0
-
-
-def backup_account(save_location):
-    backup_location = Path(save_location)
-    save_location = os.path.join(backup_location, 'cybervault_backup.zip')
-    backup = zipfile.ZipFile(save_location, 'w')
-
-    backup.write()
-    backup.close()
