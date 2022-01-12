@@ -8,9 +8,10 @@ import zipfile
 from pathlib import Path
 from elevate import elevate
 from PyQt5 import QtWidgets
-from PyQt5.uic import loadUi
+from PyQt5 import uic
 from PIL.ImageQt import ImageQt
 from pyotp import random_base32, TOTP
+from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
 from PyQt5.QtGui import QPixmap, QFont, QBrush, QColor
 from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_copy, check_rsa
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
@@ -24,7 +25,7 @@ from database import get_user_enc_data, check_user, check_vault
 class UI(QMainWindow):
     def __init__(self):
         super(UI, self).__init__()
-        loadUi("cybervault.ui", self)
+        uic.loadUi("cybervault.ui", self)
         self.vault_user = User()
         self.new_account.clicked.connect(self.create_account)
         self.import_cybervault.clicked.connect(self.open_vault)
@@ -60,7 +61,7 @@ class UI(QMainWindow):
 class NewUser(QDialog):
     def __init__(self, user):
         super(NewUser, self).__init__()
-        loadUi("newaccount.ui", self)
+        uic.loadUi("newaccount.ui", self)
         self.img = None
         self.qr = None
         self.uname = None
@@ -259,7 +260,7 @@ class NewUser(QDialog):
 class Login(QDialog):
     def __init__(self, user):
         super(Login, self).__init__()
-        loadUi("login.ui", self)
+        uic.loadUi("login.ui", self)
         self.temp = None
         self.vault = None
         self.pri_key = None
@@ -348,7 +349,7 @@ class Login(QDialog):
 class OpenCyberVault(QDialog):
     def __init__(self):
         super(OpenCyberVault, self).__init__()
-        loadUi("opencybervault.ui", self)
+        uic.loadUi("opencybervault.ui", self)
 
         self.tag = None
         self.user = None
@@ -465,7 +466,7 @@ class OpenCyberVault(QDialog):
 class PasswordGenerator(QWidget):
     def __init__(self, pass_entry):
         super(PasswordGenerator, self).__init__()
-        loadUi("passwordgenerator.ui", self)
+        uic.loadUi("passwordgenerator.ui", self)
 
         self.slide_value = 11
         self.save_pass = pass_entry
@@ -549,7 +550,7 @@ class QRCodeGenerator:
 class PasswordVault(QDialog):
     def __init__(self, vault, username, pri_key, account, enc_vault=False):
         super(PasswordVault, self).__init__()
-        loadUi("passwordvault.ui", self)
+        uic.loadUi("passwordvault.ui", self)
 
         # Setup variables needed to run class
         self.conn = None
@@ -564,6 +565,7 @@ class PasswordVault(QDialog):
         self.vault_locked = True
         self.username = username
         self.pass_checker = None
+        self.delete_index = None
         self.vault_unlocked = False
         self.passwd_generator = None
         self.vault_path = Path(vault)
@@ -591,6 +593,7 @@ class PasswordVault(QDialog):
         self.account_list.clicked.connect(self.load_table)
         self.account_table.clicked.connect(self.copy_pass)
         self.add_entry_btn.clicked.connect(self.add_entry)
+        self.delete_entry_btn.clicked.connect(self.delete)
         self.check_pass_btn.clicked.connect(self.check_pass)
         self.unlock_vault_btn.clicked.connect(self.vault_unlock)
         self.enable_checkbox.stateChanged.connect(self.is_checked)
@@ -604,6 +607,7 @@ class PasswordVault(QDialog):
             self.unlock_vault_btn.hide()
             self.lock_vault_btn.setEnabled(True)
             self.unlock_vault_btn.setEnabled(False)
+            self.delete_entry_btn.setEnabled(True)
 
             # Display entry boxes and labels.
             self.copy_btn.show()
@@ -780,9 +784,17 @@ class PasswordVault(QDialog):
 
         self.load_list()
 
+    def delete(self):
+        print(self.delete_index)
+        # self.cur.execute()
+        if self.delete_index:
+            self.delete_index.clear()
+        print(self.delete_index)
+
     # Done
     def copy_pass(self):
         request = self.account_table.currentItem()
+        self.delete_index = self.account_table.currentRow()
         if request:
             clipboard_copy(request.text())
 
@@ -830,7 +842,7 @@ class PasswordDelegate(QtWidgets.QStyledItemDelegate):
 class PasswordChecker(QDialog):
     def __init__(self, vault):
         super(PasswordChecker, self).__init__()
-        loadUi("passwordchecker.ui", self)
+        uic.loadUi("passwordchecker.ui", self)
         self.found = []
         self.file = None
         self.index_list = []
@@ -962,7 +974,7 @@ class PasswordChecker(QDialog):
 class BackupAccount(QDialog):
     def __init__(self):
         super(BackupAccount, self).__init__()
-        loadUi("backupaccount.ui", self)
+        uic.loadUi("backupaccount.ui", self)
 
         self.tag = None
         self.user = None
@@ -1141,7 +1153,10 @@ class User:
     def unlock_vault(self):
         v_passwd = get_reg_key()
         if v_passwd:
-            user_db_dec('users.db', v_passwd)
+            try:
+                user_db_dec('users.db', v_passwd)
+            except:
+                pass
             passwd = rsa_vault_decrypt(self.pri_key, self.userid)
             self.unlocked = aes_decrypt(self.vault, passwd)
 
@@ -1154,14 +1169,14 @@ class User:
 
 # Done
 def back_to_main():
-    widget.addWidget(mainwindow)
+    widget.addWidget(main_window)
     widget.setCurrentIndex(widget.currentIndex()+1)
 
 
 def exit_handler():
     print("Now Exiting")
-    if not mainwindow.vault_user.locked:
-        mainwindow.vault_user.lock_vault()
+    if not main_window.vault_user.locked:
+        main_window.vault_user.lock_vault()
 
     sys.exit(0)
 
@@ -1179,8 +1194,8 @@ if __name__ == '__main__':
 
     app = QApplication([])
     widget = QtWidgets.QStackedWidget()
-    mainwindow = UI()
+    main_window = UI()
     app.aboutToQuit.connect(exit_handler)
-    widget.addWidget(mainwindow)
+    widget.addWidget(main_window)
     widget.show()
     app.exec_()
