@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from PyQt5.QtSql import QSqlDatabase, QSqlQuery
 
 
 # Done
@@ -27,32 +28,6 @@ def create_db(backup=False, file_path=None):
     REFERENCES users(id))""")
     conn.commit()
     conn.close()
-
-
-# Done
-# Function takes a username, public key, and,
-# vault file name, and an otp secret key if one is provided.
-def create_cybervault(username, vault):
-    success = False
-
-    if not username:
-        return
-
-    try:
-        conn = sqlite3.connect(vault)
-        cur = conn.cursor()
-
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS cybervault
-        (vid INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, website_url TEXT,
-        username TEXT, password TEXT UNIQUE)
-        """)
-        success = True
-    except AttributeError:
-        os.remove(vault)
-
-    if success:
-        return True
 
 
 # Done
@@ -227,3 +202,40 @@ def check_vault(vault_location):
         return 'yes'
     else:
         return 'no'
+
+
+class VaultDB:
+    def __init__(self, vault, username):
+        self.vault = vault
+        self.username = username
+        self.query = None
+        self.db = QSqlDatabase.addDatabase('QSQLITE')
+
+    def create_db(self):
+        if not self.username:
+            return False
+
+        self.db.setDatabaseName(self.vault)
+        if not self.db.open():
+            return False
+
+        self.query = QSqlQuery(self.db)
+
+        self.query.exec_("""
+                CREATE TABLE IF NOT EXISTS cybervault
+                (vid INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, website_url TEXT,
+                username TEXT, password TEXT UNIQUE)
+                """)
+
+        return True
+
+    def add_entry(self, entryname, url, user, passwd):
+        name = entryname
+        web_url = url
+        username = user
+        password = passwd
+
+        entries = [name, web_url, username, password]
+        self.query.exec_("""
+            INSERT INTO cybervault ("name", "website_url", "username", "password") VALUES(?, ?, ?, ?)
+            """, entries)

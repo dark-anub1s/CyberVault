@@ -11,14 +11,14 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PIL.ImageQt import ImageQt
 from pyotp import random_base32, TOTP
-from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
+from PyQt5.QtSql import QSqlTableModel
 from PyQt5.QtGui import QPixmap, QFont, QBrush, QColor
 from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_copy, check_rsa
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
-from database import create_db, create_cybervault, get_user, add_entry, add_user_enc_data, add_user, check_passwd
+from database import create_db, get_user, add_entry, add_user_enc_data, add_user, check_passwd
 from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, generate_password
 from functions import get_reg_flag, get_reg_key, user_db_enc, user_db_dec, create_vault_key
-from database import get_user_enc_data, check_user, check_vault
+from database import get_user_enc_data, check_user, check_vault, VaultDB
 
 
 # Done
@@ -65,6 +65,7 @@ class NewUser(QDialog):
         self.img = None
         self.qr = None
         self.uname = None
+        self.db = None
         self.home = Path.home()
         self.vault_state = None
         self.qrcode = None
@@ -131,7 +132,7 @@ class NewUser(QDialog):
         self.v_passwd = get_reg_key()
         try:
             user_db_dec('users.db', self.v_passwd)
-        except:
+        except Exception as e:
             pass
 
         # Check username
@@ -142,10 +143,10 @@ class NewUser(QDialog):
     # Done
     def create_account(self):
         userid = None
-
+        self.db = VaultDB(self.vault, self.uname)
         self.vault_passwd = vault_password()
 
-        result = create_cybervault(self.uname, self.vault)
+        result = self.db.create_db()
         # Create account in database and make password vault with MFA
         if result:
             self.account = True
@@ -569,6 +570,7 @@ class PasswordVault(QDialog):
         self.vault_unlocked = False
         self.passwd_generator = None
         self.vault_path = Path(vault)
+        self.vault_db = VaultDB(vault, self.username)
 
         # Hide all disabled buttons at start
         self.vault_lock(enc_vault)
