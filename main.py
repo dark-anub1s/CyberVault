@@ -11,14 +11,13 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PIL.ImageQt import ImageQt
 from pyotp import random_base32, TOTP
-from PyQt5.QtSql import QSqlTableModel
 from PyQt5.QtGui import QPixmap, QFont, QBrush, QColor
 from functions import rsa_vault_decrypt, aes_decrypt, clipboard_wipe, clipboard_copy, check_rsa
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QFileDialog, QWidget, QMessageBox
-from database import create_db, get_user, add_entry, add_user_enc_data, add_user, check_passwd
+from database import create_db, get_user, add_entry, add_user_enc_data, add_user, check_passwd, create_cybervault
 from functions import generate_keys, pwn_checker, vault_password, rsa_vault_encrypt, aes_encrypt, generate_password
 from functions import get_reg_flag, get_reg_key, user_db_enc, user_db_dec, create_vault_key
-from database import get_user_enc_data, check_user, check_vault, VaultDB
+from database import get_user_enc_data, check_user, check_vault
 
 
 # Done
@@ -65,7 +64,6 @@ class NewUser(QDialog):
         self.img = None
         self.qr = None
         self.uname = None
-        self.db = None
         self.home = Path.home()
         self.vault_state = None
         self.qrcode = None
@@ -143,10 +141,9 @@ class NewUser(QDialog):
     # Done
     def create_account(self):
         userid = None
-        self.db = VaultDB(self.vault, self.uname)
         self.vault_passwd = vault_password()
 
-        result = self.db.create_db()
+        result = create_cybervault(self.uname, self.vault)
         # Create account in database and make password vault with MFA
         if result:
             self.account = True
@@ -294,26 +291,30 @@ class Login(QDialog):
 
         if self.username:
             v_passwd = get_reg_key()
-            user_db_dec('users.db', v_passwd)
-            user, pub_key, self.vault, self.otp_s_key, userid = get_user(self.username)
-            if self.temp == pub_key:
-                self.vault_account.s_key = self.otp_s_key
-                self.vault_account.userid = userid
-                self.vault_account.vault = self.vault
-                self.vault_account.pub_key = pub_key
+            try:
+                user_db_dec('users.db', v_passwd)
 
-                if user:
-                    self.login_btn.setEnabled(False)
-                    self.auth_code_lable.show()
-                    self.auth_code_entry.show()
-                    self.verify_code_btn.show()
-                    self.verify_code_btn.clicked.connect(self.verify_login)
+                user, pub_key, self.vault, self.otp_s_key, userid = get_user(self.username)
+                if self.temp == pub_key:
+                    self.vault_account.s_key = self.otp_s_key
+                    self.vault_account.userid = userid
+                    self.vault_account.vault = self.vault
+                    self.vault_account.pub_key = pub_key
 
+                    if user:
+                        self.login_btn.setEnabled(False)
+                        self.auth_code_lable.show()
+                        self.auth_code_entry.show()
+                        self.verify_code_btn.show()
+                        self.verify_code_btn.clicked.connect(self.verify_login)
+
+                    else:
+                        pass
                 else:
-                    pass
-            else:
-                # Alert user that the wrong RSA key was loaded.
-                self.show_popup()
+                    # Alert user that the wrong RSA key was loaded.
+                    self.show_popup()
+            except Exception as e:
+                pass
         else:
             pass
 
@@ -554,8 +555,6 @@ class PasswordVault(QDialog):
         uic.loadUi("passwordvault.ui", self)
 
         # Setup variables needed to run class
-        self.conn = None
-        self.cur = None
         self.passwd = None
         self.web_url = None
         self.username = None
@@ -570,7 +569,8 @@ class PasswordVault(QDialog):
         self.vault_unlocked = False
         self.passwd_generator = None
         self.vault_path = Path(vault)
-        self.vault_db = VaultDB(vault, self.username)
+        self.conn = sqlite3.connect(self.vault_path)
+        self.cur = self.conn.cursor()
 
         # Hide all disabled buttons at start
         self.vault_lock(enc_vault)
@@ -592,7 +592,6 @@ class PasswordVault(QDialog):
         self.delete_entry_btn.setEnabled(False)
 
         self.pass_gen_btn.clicked.connect(self.pass_gen)
-        self.account_list.clicked.connect(self.load_table)
         self.account_table.clicked.connect(self.copy_pass)
         self.add_entry_btn.clicked.connect(self.add_entry)
         self.delete_entry_btn.clicked.connect(self.delete)
@@ -635,7 +634,7 @@ class PasswordVault(QDialog):
             self.enable_checkbox.setEnabled(True)
             self.enable_checkbox.show()
 
-            self.load_list()
+            self.load_table()
 
     # Done
     def vault_lock(self, enc_vault):
@@ -676,44 +675,32 @@ class PasswordVault(QDialog):
         self.check_pass_btn.hide()
         self.check_pass_btn.setEnabled(False)
 
-        self.account_list.clear()
         self.account_table.clear()
 
         clipboard_wipe()
 
     # Done
-    def load_list(self):
-        self.account_list.clear()
-        self.conn = sqlite3.connect(self.vault_path)
-        self.cur = self.conn.cursor()
-
-        self.cur.execute("""SELECT name FROM cybervault""")
-        names = self.cur.fetchall()
-
-        for i in range(len(names)):
-            entry = QtWidgets.QListWidgetItem(names[i][0])
-            self.account_list.addItem(entry)
-
-    # Done
     def load_table(self):
-        self.account_table.setRowCount(15)
-        self.account_table.setColumnCount(4)
-        self.account_table.setColumnWidth(0, 163)
-        self.account_table.setColumnWidth(1, 225)
-        self.account_table.setColumnWidth(2, 173)
-        self.account_table.setColumnWidth(3, 343)
         self.account_table.clear()
+        self.account_table.setColumnCount(5)
+        self.account_table.setHorizontalHeaderLabels(['ID', 'Name', 'URL', 'Username', 'Password'])
+        self.account_table.setColumnWidth(0, 25)
+        self.account_table.setColumnWidth(1, 175)
+        self.account_table.setColumnWidth(2, 250)
+        self.account_table.setColumnWidth(3, 180)
+        self.account_table.setColumnWidth(4, 500)
         delegate = PasswordDelegate(self.account_table)
         self.account_table.setItemDelegate(delegate)
-        request = self.account_list.currentItem()
 
-        results = self.cur.execute("SELECT * FROM cybervault WHERE name=? LIMIT 15", (request.text(),))
+        results = self.cur.execute("SELECT * FROM cybervault")
         table_row = 0
         for row in results:
-            self.account_table.setItem(table_row, 0, QtWidgets.QTableWidgetItem(row[1]))
-            self.account_table.setItem(table_row, 1, QtWidgets.QTableWidgetItem(row[2]))
-            self.account_table.setItem(table_row, 2, QtWidgets.QTableWidgetItem(row[3]))
-            self.account_table.setItem(table_row, 3, QtWidgets.QTableWidgetItem(row[4]))
+            self.account_table.setRowCount(table_row + 1)
+            self.account_table.setItem(table_row, 0, QtWidgets.QTableWidgetItem(str(row[0])))
+            self.account_table.setItem(table_row, 1, QtWidgets.QTableWidgetItem(row[1]))
+            self.account_table.setItem(table_row, 2, QtWidgets.QTableWidgetItem(row[2]))
+            self.account_table.setItem(table_row, 3, QtWidgets.QTableWidgetItem(row[3]))
+            self.account_table.setItem(table_row, 4, QtWidgets.QTableWidgetItem(row[4]))
 
             table_row += 1
 
@@ -784,19 +771,24 @@ class PasswordVault(QDialog):
         self.submit_btn.setEnabled(False)
         self.enable_checkbox.setChecked(False)
 
-        self.load_list()
+        self.load_table()
 
     def delete(self):
-        print(self.delete_index)
         # self.cur.execute()
-        if self.delete_index:
-            self.delete_index.clear()
         print(self.delete_index)
+        if self.delete_index:
+            print(f"Row to be removed: {self.delete_index}")
+            self.cur.execute("DELETE FROM cybervault WHERE vid=?", (self.delete_index,))
+            self.delete_index = None
+            self.conn.commit()
+            self.load_table()
 
     # Done
     def copy_pass(self):
         request = self.account_table.currentItem()
-        self.delete_index = self.account_table.currentRow()
+        row = self.account_table.currentItem().row()
+        self.delete_index = self.account_table.item(row, 0).text()
+
         if request:
             clipboard_copy(request.text())
 
@@ -834,7 +826,7 @@ class PasswordVault(QDialog):
 class PasswordDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super().initStyleOption(option, index)
-        if index.column() == 3:
+        if index.column() == 4:
             style = option.widget.style() or QtWidgets.QApplication.style()
             hint = style.styleHint(QtWidgets.QStyle.SH_LineEdit_PasswordCharacter)
             option.text = chr(hint) * len(option.text)
