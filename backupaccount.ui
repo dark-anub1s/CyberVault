@@ -49,7 +49,7 @@
     <enum>QFrame::Box</enum>
    </property>
    <property name="text">
-    <string>Backup Your Account</string>
+    <string>Backup/Remove Your Account</string>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
@@ -76,7 +76,7 @@
     <enum>QFrame::Box</enum>
    </property>
    <property name="text">
-    <string>Here you can backup your entire account into a single zip file. Note: Your Private Key WILL NOT be saved in this zip file, you must move your key to a secure location if you are moving your account to a new computer. The system will backup your vault, and account info.</string>
+    <string>Here you can backup your entire account into a single zip file. Note: Your Private Key WILL NOT be saved in this zip file, you must move your key to a secure location if you are moving your account to a new computer. The system will backup your vault, and account info. If you want to remove your accout please select the Remove Accout Check Box.</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -105,7 +105,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>575</y>
+     <y>515</y>
      <width>960</width>
      <height>50</height>
     </rect>
@@ -129,7 +129,7 @@
    <property name="geometry">
     <rect>
      <x>225</x>
-     <y>340</y>
+     <y>400</y>
      <width>360</width>
      <height>35</height>
     </rect>
@@ -151,7 +151,7 @@
    <property name="geometry">
     <rect>
      <x>595</x>
-     <y>340</y>
+     <y>400</y>
      <width>125</width>
      <height>35</height>
     </rect>
@@ -173,7 +173,7 @@
    <property name="geometry">
     <rect>
      <x>740</x>
-     <y>340</y>
+     <y>400</y>
      <width>95</width>
      <height>35</height>
     </rect>
@@ -195,7 +195,7 @@
    <property name="geometry">
     <rect>
      <x>845</x>
-     <y>340</y>
+     <y>400</y>
      <width>125</width>
      <height>35</height>
     </rect>
@@ -217,7 +217,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>340</y>
+     <y>400</y>
      <width>205</width>
      <height>35</height>
     </rect>
@@ -238,7 +238,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>250</y>
+     <y>310</y>
      <width>205</width>
      <height>35</height>
     </rect>
@@ -259,7 +259,7 @@
    <property name="geometry">
     <rect>
      <x>225</x>
-     <y>250</y>
+     <y>310</y>
      <width>200</width>
      <height>35</height>
     </rect>
@@ -278,7 +278,7 @@
    <property name="geometry">
     <rect>
      <x>225</x>
-     <y>295</y>
+     <y>355</y>
      <width>360</width>
      <height>35</height>
     </rect>
@@ -294,7 +294,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>295</y>
+     <y>355</y>
      <width>205</width>
      <height>35</height>
     </rect>
@@ -315,7 +315,7 @@
    <property name="geometry">
     <rect>
      <x>595</x>
-     <y>295</y>
+     <y>355</y>
      <width>125</width>
      <height>35</height>
     </rect>
@@ -351,6 +351,78 @@
    </property>
    <property name="orientation">
     <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="remove_btn">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>580</y>
+     <width>960</width>
+     <height>50</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>12</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: rgb(231, 208, 162);</string>
+   </property>
+   <property name="text">
+    <string>Remove Account</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="backup_checkBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>250</y>
+     <width>225</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>14</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Backup Account</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="remove_checkBox">
+   <property name="geometry">
+    <rect>
+     <x>745</x>
+     <y>250</y>
+     <width>225</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>14</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Remove Account</string>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>

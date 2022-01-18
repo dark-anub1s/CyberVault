@@ -15,7 +15,7 @@ def create_db(backup=False, file_path=None):
     cur = conn.cursor()
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users
-    (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, 
+    (uuid INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, 
     public_key TEXT NOT NULL UNIQUE,
     vault_location TEXT NOT NULL UNIQUE, otp_key TEXT UNIQUE)
     """)
@@ -24,7 +24,7 @@ def create_db(backup=False, file_path=None):
     cur.execute("""
     CREATE TABLE IF NOT EXISTS data
     (userid INTEGER PRIMARY KEY, session_key BLOB, nonce BLOB, tag BLOB, ciphertext BLOB, FOREIGN KEY(userid) 
-    REFERENCES users(id))""")
+    REFERENCES users(uuid))""")
     conn.commit()
     conn.close()
 

@@ -33,25 +33,25 @@ class UI(QMainWindow):
 
     # Done
     def create_account(self):
-        newaccountwindow = NewUser(self.vault_user)
-        widget.addWidget(newaccountwindow)
+        new_account_window = NewUser(self.vault_user)
+        widget.addWidget(new_account_window)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
     # Done
     def login(self):
-        loginwindow = Login(self.vault_user)
-        widget.addWidget(loginwindow)
+        login_window = Login(self.vault_user)
+        widget.addWidget(login_window)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
     # Done
     def open_vault(self):
-        openvaultwindow = OpenCyberVault()
-        widget.addWidget(openvaultwindow)
+        open_vault_window = OpenCyberVault()
+        widget.addWidget(open_vault_window)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
     # Done
     def backup_account(self):
-        account_backup = BackupAccount()
+        account_backup = BRAccount()
         widget.addWidget(account_backup)
         widget.setCurrentIndex(widget.currentIndex()+1)
 
@@ -774,10 +774,7 @@ class PasswordVault(QDialog):
         self.load_table()
 
     def delete(self):
-        # self.cur.execute()
-        print(self.delete_index)
         if self.delete_index:
-            print(f"Row to be removed: {self.delete_index}")
             self.cur.execute("DELETE FROM cybervault WHERE vid=?", (self.delete_index,))
             self.delete_index = None
             self.conn.commit()
@@ -965,9 +962,9 @@ class PasswordChecker(QDialog):
 
 
 # Done
-class BackupAccount(QDialog):
+class BRAccount(QDialog):
     def __init__(self):
-        super(BackupAccount, self).__init__()
+        super(BRAccount, self).__init__()
         uic.loadUi("backupaccount.ui", self)
 
         self.tag = None
@@ -986,50 +983,72 @@ class BackupAccount(QDialog):
         self.ciphertext = None
         self.session_key = None
         self.home = Path.home()
+        self.private_key = None
         self.start_location = os.getcwd()
         self.home = os.path.join(self.home, "Documents")
+        self.connect = None
+        self.cursor = None
 
         # Setup buttons
         self.mfa_verify_btn.clicked.connect(self.mfa)
         self.save_btn.clicked.connect(self.backup_vault)
+        self.remove_btn.clicked.connect(self.remove_user)
         self.browse_btn.clicked.connect(self.save_archive)
         self.load_rsa_key_btn.clicked.connect(self.load_rsa)
+        self.backup_checkBox.stateChanged.connect(self.backup_is_checked)
+        self.remove_checkBox.stateChanged.connect(self.remove_is_checked)
 
         # Hide and disable buttons that are not needed right away.
         self.save_btn.hide()
+        self.remove_btn.hide()
         self.mfa_entry.hide()
         self.mfa_verify_btn.hide()
         self.save_btn.setEnabled(False)
+        self.remove_btn.setEnabled(False)
         self.mfa_verify_btn.setEnabled(False)
+        self.account_user_entry.setEnabled(False)
+        self.backup_entry.setEnabled(False)
+        self.load_rsa_key_entry.setEnabled(False)
+        self.browse_btn.setEnabled(False)
+        self.load_rsa_key_btn.setEnabled(False)
 
     # Done
     def load_rsa(self):
         f_name = QFileDialog.getOpenFileName(self, 'Load RSA Key', str(self.home), 'Key File (*.pem)')
         self.load_rsa_key_entry.setText(f_name[0])
+        self.private_key = self.load_rsa_key_entry.text()
         if self.load_rsa_key_entry.text():
             self.temp_pub = check_rsa(f_name[0])
-        self.save_user()
+        self.confirm_user()
+
+    def confirm_user(self):
+        v_passwd = get_reg_key()
+        try:
+            user_db_dec('users.db', v_passwd)
+            self.username = self.account_user_entry.text()
+            if self.username:
+                self.user, self.pubkey, self.vault, self.s_key, self.userid = get_user(self.username)
+                if self.temp_pub == self.pubkey:
+                    self.mfa_entry.show()
+                    self.mfa_verify_btn.show()
+                    self.mfa_verify_btn.setEnabled(True)
+                else:
+                    self.load_rsa_key_entry.clear()
+            else:
+                pass
+
+        except Exception as e:
+            print(f"Error: {e}")
 
     # Done
     def save_user(self):
-        self.username = self.account_user_entry.text()
-        if self.username:
-            self.user, self.pubkey, self.vault, self.s_key, self.userid = get_user(self.username)
-            if self.temp_pub == self.pubkey:
-                self.mfa_entry.show()
-                self.mfa_verify_btn.show()
-                self.mfa_verify_btn.setEnabled(True)
-                if self.userid:
-                    self.session_key, self.nonce, self.tag, self.ciphertext = get_user_enc_data(self.userid)
-                    create_db(backup=True, file_path=self.path.parent)
-                    uid = add_user(self.username, self.pubkey, self.vault, self.s_key, backup=True, file_path=self.path.parent)
-                    add_user_enc_data(uid, self.session_key, self.nonce, self.tag, self.ciphertext, backup=True,
-                                      file_path=self.path.parent)
+        if self.userid:
+            self.session_key, self.nonce, self.tag, self.ciphertext = get_user_enc_data(self.userid)
+            create_db(backup=True, file_path=self.path.parent)
+            uid = add_user(self.username, self.pubkey, self.vault, self.s_key, backup=True, file_path=self.path.parent)
+            add_user_enc_data(uid, self.session_key, self.nonce, self.tag, self.ciphertext, backup=True,
+                              file_path=self.path.parent)
 
-                else:
-                    pass
-            else:
-                pass
         else:
             pass
 
@@ -1043,7 +1062,34 @@ class BackupAccount(QDialog):
         result = self.mfa_check.get_verify()
         if result:
             self.save_btn.show()
+            self.remove_btn.show()
+
+    # Done
+    def backup_is_checked(self):
+        # Check if user wants to backup account
+        if self.backup_checkBox.isChecked():
             self.save_btn.setEnabled(True)
+            self.remove_checkBox.setChecked(False)
+            self.remove_btn.setEnabled(False)
+            self.account_user_entry.setEnabled(True)
+            self.backup_entry.setEnabled(True)
+            self.load_rsa_key_entry.setEnabled(True)
+            self.browse_btn.setEnabled(True)
+            self.load_rsa_key_btn.setEnabled(True)
+            self.browse_btn.show()
+            self.backup_entry.show()
+
+    def remove_is_checked(self):
+        # Check if user wants to remove account
+        if self.remove_checkBox.isChecked():
+            self.remove_btn.setEnabled(True)
+            self.save_btn.setEnabled(False)
+            self.backup_checkBox.setChecked(False)
+            self.account_user_entry.setEnabled(True)
+            self.load_rsa_key_entry.setEnabled(True)
+            self.browse_btn.hide()
+            self.backup_entry.hide()
+            self.load_rsa_key_btn.setEnabled(True)
 
     # Done
     def save_archive(self):
@@ -1060,6 +1106,7 @@ class BackupAccount(QDialog):
 
     # Done
     def backup_vault(self):
+        self.save_user()
         backup_db = os.path.join(self.path.parent, 'backup.db')
         with zipfile.ZipFile(self.file, 'w') as backup_archive:
             vault_path = Path(self.vault)
@@ -1072,8 +1119,25 @@ class BackupAccount(QDialog):
             backup_archive.write(file2)
 
         os.remove(backup_db)
+        os.remove(vault_path)
         os.chdir(self.start_location)
+        self.temp_pub = None
         self.show_popup()
+
+    def remove_user(self):
+        connect = sqlite3.connect('users.db')
+        cursor = connect.cursor()
+        cursor.execute("""DELETE FROM data WHERE userid=?""", (self.userid,))
+        connect.commit()
+        cursor.execute("""DELETE FROM users WHERE uuid=?""", (self.userid,))
+        connect.commit()
+        try:
+            path = Path(self.vault)
+            os.remove(path)
+        except TypeError and FileNotFoundError:
+            pass
+        self.remove_popup()
+        self.temp_pub = None
 
     # Done
     def show_popup(self):
@@ -1120,6 +1184,53 @@ it in the same location as your private key!""")
             self.ciphertext = None
             self.session_key = None
 
+            self.ask_to_remove()
+
+    def ask_to_remove(self):
+        msg = QMessageBox()
+
+        msg.setWindowTitle("Remove acount from database?")
+        msg.setText("""Would you also like to remove your accout from the database? (Yes to delete/No if
+        if you just want a backup copy of your account.)""")
+        msg.setIcon(QMessageBox.Question)
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+        msg.buttonClicked.connect(self.ask_remove_popup_button)
+
+        msg.exec_()
+
+    def ask_remove_popup_button(self, i):
+        v_passwd = get_reg_key()
+        if i.text() == '&Yes':
+            self.remove_user()
+        else:
+            user_db_enc('users.db', v_passwd)
+            back_to_main()
+
+    # Done
+    def remove_popup(self):
+        msg = QMessageBox()
+
+        msg.setWindowTitle("Do you want to delete your private key?")
+        msg.setText("""Your accout has been deleted! Do you also want to remove your private key? (Yes to delete/No if
+if you need to backup your private key)""")
+        msg.setIcon(QMessageBox.Question)
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+
+        msg.buttonClicked.connect(self.remove_popup_button)
+
+        msg.exec_()
+
+    # Done
+    def remove_popup_button(self, i):
+        v_passwd = get_reg_key()
+        if i.text() == '&Yes':
+            key = Path(self.private_key)
+            os.remove(key)
+            user_db_enc('users.db', v_passwd)
+            back_to_main()
+        else:
+            user_db_enc('users.db', v_passwd)
             back_to_main()
 
 

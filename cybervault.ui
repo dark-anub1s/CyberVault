@@ -116,7 +116,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>235</y>
+      <y>265</y>
       <width>960</width>
       <height>50</height>
      </rect>
@@ -140,7 +140,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>335</y>
+      <y>340</y>
       <width>960</width>
       <height>50</height>
      </rect>
@@ -170,7 +170,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>435</y>
+      <y>415</y>
       <width>960</width>
       <height>50</height>
      </rect>
@@ -194,7 +194,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>535</y>
+      <y>490</y>
       <width>960</width>
       <height>50</height>
      </rect>
@@ -211,7 +211,7 @@
      <string notr="true">background-color: rgb(231, 208, 162);</string>
     </property>
     <property name="text">
-     <string>Backup Account</string>
+     <string>Backup/Remove Account</string>
     </property>
    </widget>
    <zorder>Title</zorder>
