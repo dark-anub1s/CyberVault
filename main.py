@@ -385,11 +385,16 @@ class OpenCyberVault(QDialog):
         self.session_key, self.nonce, self.tag, self.ciphertext = get_user_enc_data(self.userid, backup=True, file_path=self.path.parent)
 
         # Add recovered user to current db
-        uid = add_user(self.username, self.pubkey, self.vault, self.s_key)
-        add_user_enc_data(uid, self.session_key, self.nonce, self.tag, self.ciphertext)
-        os.rename(self.backup_vault, self.vault)
-        os.remove(self.file)
-        os.remove(os.path.join(self.path.parent, 'backup.db'))
+        v_passwd = get_reg_key()
+        try:
+            user_db_dec('users.db', v_passwd)
+            uid = add_user(self.username, self.pubkey, self.vault, self.s_key)
+            add_user_enc_data(uid, self.session_key, self.nonce, self.tag, self.ciphertext)
+            os.rename(self.backup_vault, self.vault)
+            os.remove(self.file)
+            os.remove(os.path.join(self.path.parent, 'backup.db'))
+        except Exception:
+            sys.exit(1)
 
     # Done
     def get_archive(self):
@@ -438,6 +443,7 @@ class OpenCyberVault(QDialog):
 
     # Done
     def popup_button(self, i):
+        v_passwd = get_reg_key()
         if i.text() == 'OK':
             # Clear and hide buttons and entry boxes
             self.open_btn.hide()
@@ -460,7 +466,10 @@ class OpenCyberVault(QDialog):
             self.mfa_check = None
             self.ciphertext = None
             self.session_key = None
-
+            user_db_enc('users.db', v_passwd)
+            back_to_main()
+        else:
+            user_db_enc('users.db', v_passwd)
             back_to_main()
 
 
